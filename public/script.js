@@ -1,21 +1,19 @@
-// Configuration Firebase
 const firebaseConfig = {
-    // Remplacez par votre configuration Firebase
-     apiKey: "AIzaSyDbLE9Disc3x-5jjyjlyhfLC-stJO9Oq68",
-  authDomain: "dynamicfr.firebaseapp.com",
-  projectId: "dynamicfr",
-  storageBucket: "dynamicfr.firebasestorage.app",
-  messagingSenderId: "669407854261",
-  appId: "1:669407854261:web:c4abdc9341ae9d532908fc",
-  measurementId: "G-SCMB28SN1B"
+    apiKey: "AIzaSyDbLE9Disc3x-5jjjyjlyhfLC-stJO9Oq68",
+    authDomain: "dynamicfr.firebaseapp.com",
+    projectId: "dynamicfr",
+    storageBucket: "dynamicfr.firebasestorage.app",
+    messagingSenderId: "669407854261",
+    appId: "1:669407854261:web:c4abdc9341ae9d532908fc",
+    measurementId: "G-SCMB28SN1B"
 };
 
-// Initialisation Firebase
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-// Variables globales
+// Global variables
 let clients = [];
 let articles = [];
 let documents = [];
@@ -23,15 +21,15 @@ let ventes = [];
 let achats = [];
 let paiements = [];
 let companySettings = {
-    name: "DYNAMIQUE FROID SYSTEMES",
-    address: "10 RUE CHRARDA RDC DERB LOUBILA BOURGONE CENTRE D'AFFAIRE SOCOJUFI CASABLANCA MAROC",
+    name: "Dynamique Froid Systemes",
+    address: "10 Rue Chrarda RDC Derb Loubila Bourgogne Centre D'Affaire Socojufi Casablanca Maroc",
     phone: "",
     email: "",
     logoUrl: "",
     cachetUrl: ""
 };
 
-// Variables pour le document en cours
+// Variables for current document
 let currentDocumentType = 'devis';
 let documentCounter = {
     devis: 1,
@@ -39,188 +37,506 @@ let documentCounter = {
     proforma: 1
 };
 
-// Initialisation de l'application
+// Utility function for passive/active event listeners
+function addEventListenerSafe(element, event, handler, options = {}) {
+    try {
+        // Test if passive option is supported
+        let passiveSupported = false;
+        const testOptions = Object.defineProperty({}, "passive", {
+            get: function() {
+                passiveSupported = true;
+            }
+        });
+        window.addEventListener("test", null, testOptions);
+        window.removeEventListener("test", null, testOptions);
+        
+        // Apply options based on support and requirements
+        if (passiveSupported) {
+            element.addEventListener(event, handler, options);
+        } else {
+            element.addEventListener(event, handler, false);
+        }
+    } catch (error) {
+        console.warn('Event listener fallback:', error);
+        element.addEventListener(event, handler, false);
+    }
+}
+
+// Helper function to diagnose navigation issues
+function diagnoseNavigationIssues() {
+    console.log('🔍 DIAGNOSTIC DE NAVIGATION');
+    console.log('==========================');
+    
+    // Vérifier tous les boutons de navigation
+    const navButtons = document.querySelectorAll('.nav-btn');
+    console.log(`📱 Boutons de navigation trouvés: ${navButtons.length}`);
+    navButtons.forEach((btn, index) => {
+        console.log(`   ${index}: section="${btn.dataset.section}" text="${btn.textContent.trim()}"`);
+    });
+    
+    // Vérifier toutes les sections
+    const sections = document.querySelectorAll('.section');
+    console.log(`📄 Sections trouvées: ${sections.length}`);
+    sections.forEach((section, index) => {
+        const isActive = section.classList.contains('active');
+        const display = window.getComputedStyle(section).display;
+        console.log(`   ${index}: id="${section.id}" active=${isActive} display="${display}"`);
+    });
+    
+    // Vérifier les styles CSS de base
+    const sampleSection = document.getElementById('ventes');
+    if (sampleSection) {
+        const styles = window.getComputedStyle(sampleSection);
+        console.log('📐 Styles de la section ventes:');
+        console.log(`   display: ${styles.display}`);
+        console.log(`   visibility: ${styles.visibility}`);
+        console.log(`   opacity: ${styles.opacity}`);
+        console.log(`   position: ${styles.position}`);
+        console.log(`   z-index: ${styles.zIndex}`);
+    }
+    
+    console.log('==========================');
+}
+
+// Initialize app on page load
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM Content Loaded - Initializing app');
     initializeApp();
     setupEventListeners();
     loadData();
+    
+    // Diagnostic après un délai pour s'assurer que tout est chargé
+    setTimeout(() => {
+        diagnoseNavigationIssues();
+    }, 1000);
 });
 
-// Configuration des écouteurs d'événements avec support tactile
+// Set up event listeners with optimized touch support
 function setupEventListeners() {
-    // Navigation
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const section = e.target.dataset.section;
-            showSection(section);
-        });
-    });
-
-    // Formulaires
-    document.getElementById('clientForm').addEventListener('submit', handleClientSubmit);
-    document.getElementById('articleForm').addEventListener('submit', handleArticleSubmit);
-    document.getElementById('documentForm').addEventListener('submit', handleDocumentSubmit);
-    document.getElementById('achatForm').addEventListener('submit', handleAchatSubmit);
-    document.getElementById('companyForm').addEventListener('submit', handleCompanySubmit);
-
-    // Gestion des modals
-    window.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal')) {
-            e.target.style.display = 'none';
+    try {
+        // Navigation buttons - Fix pour les clics sur les icônes
+        const navButtons = document.querySelectorAll('.nav-btn');
+        console.log('Found navigation buttons:', navButtons.length); // Debug log
+        
+        if (navButtons.length === 0) {
+            console.warn('Aucun bouton de navigation (.nav-btn) trouvé dans le DOM');
         }
-    });
-
-    // Date par défaut pour les documents
-    document.getElementById('documentDate').value = new Date().toISOString().split('T')[0];
-    
-    // Configuration du défilement horizontal pour navigation
-    setupHorizontalScrolling();
-    
-    // Configuration du défilement des tables
-    setupTableScrolling();
-    
-    // Support tactile pour mobile
-    setupTouchSupport();
-}
-
-// Défilement horizontal intelligent pour la navigation
-function setupHorizontalScrolling() {
-    const navMenu = document.querySelector('.nav-menu');
-    let isScrolling = false;
-    
-    // Défilement avec les boutons de navigation si nécessaire
-    const buttons = document.querySelectorAll('.nav-btn');
-    
-    buttons.forEach((button, index) => {
-        button.addEventListener('click', () => {
-            // Centrer le bouton actif sur mobile
-            if (window.innerWidth < 768) {
-                const buttonRect = button.getBoundingClientRect();
-                const menuRect = navMenu.getBoundingClientRect();
-                const scrollLeft = button.offsetLeft - (menuRect.width / 2) + (buttonRect.width / 2);
+        
+        navButtons.forEach((btn, index) => {
+            const section = btn.dataset.section;
+            console.log(`Button ${index}: section="${section}"`); // Debug log
+            
+            // Fonction de gestion universelle
+            function handleNavigation(e) {
+                console.log('Navigation event triggered:', e.type, 'on button:', btn); // Debug log
+                e.preventDefault(); // Empêcher tout comportement par défaut
+                e.stopPropagation(); // Empêcher la propagation
                 
-                navMenu.scrollTo({
-                    left: scrollLeft,
-                    behavior: 'smooth'
-                });
+                // Utiliser currentTarget pour toujours pointer vers le bouton
+                // ou remonter jusqu'au bouton si on clique sur l'icône
+                let targetButton = e.currentTarget;
+                console.log('currentTarget:', targetButton); // Debug log
+                console.log('target:', e.target); // Debug log
+                
+                if (!targetButton.dataset.section) {
+                    targetButton = e.target.closest('.nav-btn');
+                    console.log('Found closest nav-btn:', targetButton); // Debug log
+                }
+                
+                const section = targetButton?.dataset.section;
+                console.log('Navigation detected, section:', section); // Debug log
+                
+                if (section) {
+                    console.log('Calling showSection with:', section); // Debug log
+                    showSection(section);
+                } else {
+                    console.warn('Section non définie pour le bouton de navigation', targetButton);
+                    console.warn('Button dataset:', targetButton?.dataset);
+                }
+            }
+            
+            // Ajouter plusieurs types d'événements pour assurer la compatibilité
+            btn.addEventListener('click', handleNavigation);
+            btn.addEventListener('touchend', handleNavigation);
+            btn.addEventListener('pointerup', handleNavigation);
+            
+            // Empêcher les comportements par défaut sur touch
+            btn.addEventListener('touchstart', (e) => {
+                console.log('Touch start detected on:', btn.dataset.section);
+            }, { passive: true });
+        });
+
+        // Form submissions
+        const forms = [
+            { id: 'clientForm', handler: handleClientSubmit },
+            { id: 'articleForm', handler: handleArticleSubmit },
+            { id: 'documentForm', handler: handleDocumentSubmit },
+            { id: 'achatForm', handler: handleAchatSubmit },
+            { id: 'companyForm', handler: handleCompanySubmit },
+            { id: 'venteForm', handler: handleVenteSubmit }
+        ];
+
+        forms.forEach(({ id, handler }) => {
+            const form = document.getElementById(id);
+            if (form) {
+                form.addEventListener('submit', handler);
+            } else {
+                console.warn(`Formulaire avec l'ID ${id} non trouvé`);
             }
         });
-    });
-    
-    // Défilement au swipe sur mobile
-    let startX = 0;
-    let scrollLeft = 0;
-    
-    navMenu.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].pageX - navMenu.offsetLeft;
-        scrollLeft = navMenu.scrollLeft;
-    });
-    
-    navMenu.addEventListener('touchmove', (e) => {
-        if (!startX) return;
-        e.preventDefault();
-        const x = e.touches[0].pageX - navMenu.offsetLeft;
-        const walk = (x - startX) * 2;
-        navMenu.scrollLeft = scrollLeft - walk;
-    });
-    
-    navMenu.addEventListener('touchend', () => {
-        startX = 0;
-    });
+
+        // Modal close on background click
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+                // Réinitialiser les formulaires dans le modal
+                const forms = e.target.querySelectorAll('form');
+                forms.forEach(form => form.reset());
+            }
+        });
+
+        // Initialize default document date
+        initializeDocumentDate();
+
+        // Setup optimized scrolling and touch support
+        setupOptimizedScrolling();
+        setupOptimizedTouchSupport();
+
+        // Setup orientation change handling
+        setupOrientationHandling();
+
+    } catch (error) {
+        console.error('Erreur lors de la configuration des écouteurs d\'événements:', error);
+        showNotification('Erreur d\'initialisation de l\'interface', 'error');
+    }
 }
 
-// Configuration du défilement des tables
+// Helper function to initialize document date
+function initializeDocumentDate() {
+    const documentDateInput = document.getElementById('documentDate');
+    if (documentDateInput) {
+        documentDateInput.value = new Date().toISOString().split('T')[0];
+    } else {
+        console.warn('Champ de date du document non trouvé');
+    }
+}
+
+// Enhanced navigation with screen detection and debugging
+function showSection(sectionName) {
+    console.log('🔄 showSection called with:', sectionName); // Debug log
+    
+    // Vérifier que la section existe
+    const targetSection = document.getElementById(sectionName);
+    if (!targetSection) {
+        console.error('❌ Section not found in DOM:', sectionName);
+        console.log('Available sections:', [...document.querySelectorAll('.section')].map(s => s.id));
+        return;
+    }
+    
+    console.log('✅ Target section found:', targetSection); // Debug log
+    
+    // Hide all sections
+    const allSections = document.querySelectorAll('.section');
+    console.log('📄 Hiding all sections, found:', allSections.length); // Debug log
+    
+    allSections.forEach((section, index) => {
+        console.log(`   Section ${index}: ${section.id} - removing active`);
+        section.classList.remove('active');
+    });
+    
+    // Remove active from all nav buttons
+    const allNavButtons = document.querySelectorAll('.nav-btn');
+    console.log('🔘 Deactivating all nav buttons, found:', allNavButtons.length); // Debug log
+    
+    allNavButtons.forEach((btn, index) => {
+        console.log(`   Button ${index}: ${btn.dataset.section} - removing active`);
+        btn.classList.remove('active');
+    });
+    
+    // Show target section
+    console.log('👁️ Activating target section:', sectionName);
+    targetSection.classList.add('active');
+    
+    // Vérifier que la classe a été ajoutée
+    const hasActive = targetSection.classList.contains('active');
+    console.log('✅ Section has active class:', hasActive);
+    
+    // Vérifier les styles CSS appliqués
+    const computedStyle = window.getComputedStyle(targetSection);
+    console.log('📐 Section display style:', computedStyle.display);
+    console.log('📐 Section visibility:', computedStyle.visibility);
+    console.log('📐 Section opacity:', computedStyle.opacity);
+    
+    // Activate nav button
+    const activeBtn = document.querySelector(`[data-section="${sectionName}"]`);
+    if (activeBtn) {
+        console.log('🔘 Activating nav button for:', sectionName);
+        activeBtn.classList.add('active');
+        
+        // Center button on mobile
+        if (window.innerWidth < 768) {
+            console.log('📱 Mobile detected, centering button');
+            const navMenu = document.querySelector('.nav-menu');
+            if (navMenu) {
+                requestAnimationFrame(() => centerButtonInView(activeBtn, navMenu));
+            }
+        }
+    } else {
+        console.warn('❌ Navigation button not found for section:', sectionName);
+    }
+    
+    // Update dashboard if needed
+    if (sectionName === 'dashboard') {
+        console.log('📊 Updating dashboard');
+        updateDashboard();
+    }
+    
+    // Smooth scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    console.log('✅ showSection completed for:', sectionName);
+}
+
+// Optimized scrolling setup with proper passive listeners
+function setupOptimizedScrolling() {
+    try {
+        const navMenu = document.querySelector('.nav-menu');
+        if (!navMenu) {
+            console.warn('Menu de navigation (.nav-menu) non trouvé');
+            return;
+        }
+
+        const buttons = document.querySelectorAll('.nav-btn');
+        if (buttons.length === 0) {
+            console.warn('Aucun bouton de navigation (.nav-btn) trouvé');
+        }
+
+        // Variables for touch scrolling
+        let touchState = {
+            isScrolling: false,
+            startX: 0,
+            scrollLeft: 0,
+            lastX: 0,
+            velocity: 0,
+            animationFrame: null
+        };
+
+        // Button click handling with smooth centering
+        buttons.forEach((button) => {
+            button.addEventListener('click', () => {
+                if (window.innerWidth < 768) {
+                    requestAnimationFrame(() => centerButtonInView(button, navMenu));
+                }
+            });
+        });
+
+        // Optimized touch handlers
+        addEventListenerSafe(navMenu, 'touchstart', (e) => {
+            const touch = e.touches[0];
+            touchState.isScrolling = true;
+            touchState.startX = touch.pageX - navMenu.offsetLeft;
+            touchState.scrollLeft = navMenu.scrollLeft;
+            touchState.lastX = touch.pageX;
+            touchState.velocity = 0;
+            
+            if (touchState.animationFrame) {
+                cancelAnimationFrame(touchState.animationFrame);
+            }
+        }, { passive: true });
+
+        addEventListenerSafe(navMenu, 'touchmove', (e) => {
+            if (!touchState.isScrolling) return;
+            
+            const touch = e.touches[0];
+            const currentX = touch.pageX - navMenu.offsetLeft;
+            const deltaX = currentX - touchState.startX;
+            touchState.velocity = touch.pageX - touchState.lastX;
+            touchState.lastX = touch.pageX;
+            
+            navMenu.scrollLeft = touchState.scrollLeft - deltaX;
+        }, { passive: true });
+
+        addEventListenerSafe(navMenu, 'touchend', () => {
+            touchState.isScrolling = false;
+            
+            // Apply momentum scrolling if velocity is significant
+            if (Math.abs(touchState.velocity) > 1) {
+                applyMomentumScrolling(navMenu, touchState.velocity);
+            }
+        }, { passive: true });
+
+        // Mouse wheel with passive listener where possible
+        addEventListenerSafe(navMenu, 'wheel', (e) => {
+            navMenu.scrollLeft += e.deltaY * 0.5;
+        }, { passive: true });
+
+        // Setup table scrolling
+        setupTableScrolling();
+
+    } catch (error) {
+        console.error('Erreur lors de la configuration du défilement:', error);
+    }
+}
+
+// Center button in view smoothly
+function centerButtonInView(button, container) {
+    try {
+        const buttonRect = button.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const scrollLeft = button.offsetLeft - (containerRect.width / 2) + (buttonRect.width / 2);
+
+        container.scrollTo({
+            left: Math.max(0, scrollLeft),
+            behavior: 'smooth'
+        });
+    } catch (error) {
+        console.error('Erreur centrage bouton:', error);
+    }
+}
+
+// Apply momentum scrolling animation
+function applyMomentumScrolling(element, velocity) {
+    let currentVelocity = velocity * 0.5; // Initial momentum
+    const friction = 0.95; // Friction factor
+    const minVelocity = 0.1;
+
+    function animate() {
+        if (Math.abs(currentVelocity) < minVelocity) return;
+        
+        element.scrollLeft -= currentVelocity;
+        currentVelocity *= friction;
+        
+        requestAnimationFrame(animate);
+    }
+    
+    requestAnimationFrame(animate);
+}
+
+// Optimized table scrolling
 function setupTableScrolling() {
     const tableWrappers = document.querySelectorAll('.table-wrapper');
-    
+    if (!tableWrappers.length) {
+        console.warn('Aucun conteneur de table (.table-wrapper) trouvé');
+        return;
+    }
+
     tableWrappers.forEach(wrapper => {
-        // Défilement tactile amélioré
-        let startX = 0;
-        let scrollLeft = 0;
-        let isScrolling = false;
-        
-        wrapper.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].pageX - wrapper.offsetLeft;
-            scrollLeft = wrapper.scrollLeft;
-            isScrolling = true;
-        });
-        
-        wrapper.addEventListener('touchmove', (e) => {
-            if (!isScrolling) return;
-            e.preventDefault();
-            const x = e.touches[0].pageX - wrapper.offsetLeft;
-            const walk = (x - startX) * 1.5;
-            wrapper.scrollLeft = scrollLeft - walk;
-        });
-        
-        wrapper.addEventListener('touchend', () => {
-            isScrolling = false;
-        });
-        
-        // Indicateurs de défilement visuels
-        wrapper.addEventListener('scroll', () => {
-            updateScrollIndicators(wrapper);
-        });
-        
-        // Défilement avec les flèches du clavier
+        // Touch state for this wrapper
+        let touchState = {
+            isScrolling: false,
+            startX: 0,
+            scrollLeft: 0,
+            lastX: 0,
+            velocity: 0
+        };
+
+        // Ensure wrapper is keyboard accessible
+        if (!wrapper.hasAttribute('tabindex')) {
+            wrapper.setAttribute('tabindex', '0');
+        }
+
+        // Optimized touch events for tables
+        addEventListenerSafe(wrapper, 'touchstart', (e) => {
+            const touch = e.touches[0];
+            touchState.isScrolling = true;
+            touchState.startX = touch.pageX - wrapper.offsetLeft;
+            touchState.scrollLeft = wrapper.scrollLeft;
+            touchState.lastX = touch.pageX;
+        }, { passive: true });
+
+        addEventListenerSafe(wrapper, 'touchmove', (e) => {
+            if (!touchState.isScrolling) return;
+            
+            const touch = e.touches[0];
+            const currentX = touch.pageX - wrapper.offsetLeft;
+            const deltaX = currentX - touchState.startX;
+            touchState.velocity = touch.pageX - touchState.lastX;
+            touchState.lastX = touch.pageX;
+            
+            wrapper.scrollLeft = touchState.scrollLeft - deltaX;
+        }, { passive: true });
+
+        addEventListenerSafe(wrapper, 'touchend', () => {
+            touchState.isScrolling = false;
+            
+            if (Math.abs(touchState.velocity) > 1) {
+                applyMomentumScrolling(wrapper, touchState.velocity);
+            }
+        }, { passive: true });
+
+        // Scroll indicators with passive listener
+        addEventListenerSafe(wrapper, 'scroll', () => {
+            requestAnimationFrame(() => updateScrollIndicators(wrapper));
+        }, { passive: true });
+
+        // Keyboard navigation
         wrapper.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft') {
-                wrapper.scrollLeft -= 100;
+                wrapper.scrollBy({ left: -100, behavior: 'smooth' });
                 e.preventDefault();
             } else if (e.key === 'ArrowRight') {
-                wrapper.scrollLeft += 100;
+                wrapper.scrollBy({ left: 100, behavior: 'smooth' });
                 e.preventDefault();
             }
         });
+
+        // Mouse wheel with throttling
+        let wheelTimeout;
+        addEventListenerSafe(wrapper, 'wheel', (e) => {
+            clearTimeout(wheelTimeout);
+            wheelTimeout = setTimeout(() => {
+                wrapper.scrollLeft += e.deltaY * 0.5;
+            }, 10);
+        }, { passive: true });
+
+        // Initial scroll indicators
+        updateScrollIndicators(wrapper);
     });
 }
 
-// Mise à jour des indicateurs de défilement
+// Update scroll indicators efficiently
 function updateScrollIndicators(wrapper) {
     const container = wrapper.closest('.table-container');
+    if (!container) return;
+    
     const { scrollLeft, scrollWidth, clientWidth } = wrapper;
     
-    // Masquer/afficher les indicateurs de début et fin
-    if (scrollLeft <= 0) {
-        container.classList.add('scroll-start');
-    } else {
-        container.classList.remove('scroll-start');
-    }
-    
-    if (scrollLeft >= scrollWidth - clientWidth - 1) {
-        container.classList.add('scroll-end');
-    } else {
-        container.classList.remove('scroll-end');
-    }
+    // Use class toggling for better performance
+    container.classList.toggle('scroll-start', scrollLeft <= 0);
+    container.classList.toggle('scroll-end', scrollLeft >= scrollWidth - clientWidth - 1);
 }
 
-// Support tactile général
-function setupTouchSupport() {
-    // Améliorer les interactions tactiles pour tous les boutons
-    const buttons = document.querySelectorAll('.btn');
-    
-    buttons.forEach(button => {
-        button.addEventListener('touchstart', () => {
+// Optimized touch support with minimal event listeners
+function setupOptimizedTouchSupport() {
+    // Add viewport meta if not present
+    let viewport = document.querySelector('meta[name=viewport]');
+    if (!viewport) {
+        viewport = document.createElement('meta');
+        viewport.name = 'viewport';
+        viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        document.head.appendChild(viewport);
+    }
+
+    // Use event delegation for button touch effects
+    document.body.addEventListener('touchstart', (e) => {
+        if (e.target.classList.contains('btn') || e.target.closest('.btn')) {
+            const button = e.target.classList.contains('btn') ? e.target : e.target.closest('.btn');
             button.style.transform = 'scale(0.95)';
-        });
-        
-        button.addEventListener('touchend', () => {
+            button.style.transition = 'transform 0.1s ease';
+        }
+    }, { passive: true });
+
+    document.body.addEventListener('touchend', (e) => {
+        if (e.target.classList.contains('btn') || e.target.closest('.btn')) {
+            const button = e.target.classList.contains('btn') ? e.target : e.target.closest('.btn');
             setTimeout(() => {
                 button.style.transform = '';
+                button.style.transition = '';
             }, 150);
-        });
-    });
-    
-    // Gestion du viewport pour éviter le zoom sur les inputs
-    const viewport = document.querySelector('meta[name=viewport]');
-    if (!viewport) {
-        const meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-        document.head.appendChild(meta);
-    }
-    
-    // Empêcher le zoom sur double-tap pour certains éléments
+        }
+    }, { passive: true });
+
+    // Prevent zoom on double tap for specific elements
     const preventZoom = document.querySelectorAll('.nav-btn, .btn, .stat-card');
     preventZoom.forEach(element => {
         element.addEventListener('touchend', (e) => {
@@ -229,73 +545,48 @@ function setupTouchSupport() {
     });
 }
 
-// Navigation améliorée avec détection d'écran
-function showSection(sectionName) {
-    // Masquer toutes les sections
-    document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
-    });
+// Setup orientation and resize handling
+function setupOrientationHandling() {
+    let resizeTimeout;
     
-    // Désactiver tous les boutons de navigation
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
+    const handleResize = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            handleOrientationChange();
+            adjustModalForMobile();
+            optimizeForMobile();
+        }, 100);
+    };
+
+    window.addEventListener('orientationchange', handleResize);
+    window.addEventListener('resize', handleResize);
     
-    // Afficher la section demandée
-    document.getElementById(sectionName).classList.add('active');
-    
-    // Activer le bouton correspondant
-    const activeBtn = document.querySelector(`[data-section="${sectionName}"]`);
-    activeBtn.classList.add('active');
-    
-    // Centrer le bouton actif sur mobile
-    if (window.innerWidth < 768) {
-        const navMenu = document.querySelector('.nav-menu');
-        const buttonRect = activeBtn.getBoundingClientRect();
-        const menuRect = navMenu.getBoundingClientRect();
-        const scrollLeft = activeBtn.offsetLeft - (menuRect.width / 2) + (buttonRect.width / 2);
-        
-        navMenu.scrollTo({
-            left: scrollLeft,
-            behavior: 'smooth'
-        });
-    }
-    
-    // Rafraîchir les données si nécessaire
-    if (sectionName === 'dashboard') {
-        updateDashboard();
-    }
-    
-    // Scroll vers le haut de la section
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Initial setup
+    adjustModalForMobile();
+    optimizeForMobile();
 }
 
-// Détection de l'orientation pour optimiser l'affichage
+// Orientation change handler
 function handleOrientationChange() {
     setTimeout(() => {
-        // Recalculer les dimensions des tables
+        // Update scroll indicators for all tables
         const tableWrappers = document.querySelectorAll('.table-wrapper');
         tableWrappers.forEach(wrapper => {
             updateScrollIndicators(wrapper);
         });
         
-        // Ajuster la navigation si nécessaire
+        // Re-center active navigation button
         const activeBtn = document.querySelector('.nav-btn.active');
         if (activeBtn && window.innerWidth < 768) {
             const navMenu = document.querySelector('.nav-menu');
-            const buttonRect = activeBtn.getBoundingClientRect();
-            const menuRect = navMenu.getBoundingClientRect();
-            const scrollLeft = activeBtn.offsetLeft - (menuRect.width / 2) + (buttonRect.width / 2);
-            
-            navMenu.scrollTo({
-                left: scrollLeft,
-                behavior: 'smooth'
-            });
+            if (navMenu) {
+                centerButtonInView(activeBtn, navMenu);
+            }
         }
     }, 100);
 }
 
-// Gestion responsive des modals
+// Responsive modal management
 function adjustModalForMobile() {
     const modals = document.querySelectorAll('.modal-content');
     
@@ -312,13 +603,12 @@ function adjustModalForMobile() {
     });
 }
 
-// Optimisation des performances pour mobile
+// Mobile performance optimization
 function optimizeForMobile() {
     if (window.innerWidth < 768) {
-        // Réduire les animations sur mobile pour les performances
         document.body.classList.add('mobile-optimized');
         
-        // Lazy loading pour les images si présentes
+        // Lazy load images
         const images = document.querySelectorAll('img');
         images.forEach(img => {
             if (img.loading !== 'lazy') {
@@ -330,32 +620,26 @@ function optimizeForMobile() {
     }
 }
 
-// Ajout des écouteurs d'événements pour l'orientation et le redimensionnement
-window.addEventListener('orientationchange', handleOrientationChange);
-window.addEventListener('resize', () => {
-    handleOrientationChange();
-    adjustModalForMobile();
-    optimizeForMobile();
-});
-
-// Initialisation mobile au chargement
-document.addEventListener('DOMContentLoaded', () => {
-    adjustModalForMobile();
-    optimizeForMobile();
-});
-
-// Navigation entre sections (supprimée car remplacée par la version responsive ci-dessus)
-
-// Gestion des modals
+// Modal management functions
 function showModal(modalId) {
-    document.getElementById(modalId).style.display = 'block';
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'block';
+        // Focus trap for accessibility
+        const firstInput = modal.querySelector('input, select, textarea, button');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+        }
+    }
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
-    // Réinitialiser les formulaires
-    const forms = document.getElementById(modalId).querySelectorAll('form');
-    forms.forEach(form => form.reset());
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        const forms = modal.querySelectorAll('form');
+        forms.forEach(form => form.reset());
+    }
 }
 
 function showClientModal() {
@@ -368,9 +652,12 @@ function showArticleModal() {
 
 function showDocumentModal(type) {
     currentDocumentType = type;
-    document.getElementById('documentModalTitle').textContent = 
-        type === 'devis' ? 'Nouveau Devis' :
-        type === 'facture' ? 'Nouvelle Facture' : 'Facture Proforma';
+    const title = document.getElementById('documentModalTitle');
+    if (title) {
+        title.textContent = 
+            type === 'devis' ? 'Nouveau Devis' :
+            type === 'facture' ? 'Nouvelle Facture' : 'Facture Proforma';
+    }
     
     populateClientSelect();
     populateArticleSelects();
@@ -378,30 +665,68 @@ function showDocumentModal(type) {
 }
 
 function showAchatModal() {
-    // Populer la liste des articles
     const select = document.getElementById('achatArticle');
-    select.innerHTML = '<option value="">Sélectionner un article</option>';
+    if (select) {
+        select.innerHTML = '<option value="">Sélectionner un article</option>';
+        
+        articles.forEach(article => {
+            const option = document.createElement('option');
+            option.value = article.id;
+            option.textContent = `${article.reference} - ${article.designation}`;
+            select.appendChild(option);
+        });
+    }
     
-    articles.forEach(article => {
-        const option = document.createElement('option');
-        option.value = article.id;
-        option.textContent = `${article.reference} - ${article.designation}`;
-        select.appendChild(option);
-    });
+    const dateInput = document.getElementById('achatDate');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
     
-    // Date du jour par défaut
-    document.getElementById('achatDate').value = new Date().toISOString().split('T')[0];
-    
-    // Écouteurs pour calcul automatique
     setupAchatCalculation();
-    
     showModal('achatModal');
+}
+
+function showVenteModal() {
+    const clientSelect = document.getElementById('venteClient');
+    if (clientSelect) {
+        clientSelect.innerHTML = '<option value="">Sélectionner un client</option>';
+        
+        clients.forEach(client => {
+            const option = document.createElement('option');
+            option.value = client.id;
+            option.textContent = client.name;
+            clientSelect.appendChild(option);
+        });
+    }
+    
+    const articleSelect = document.getElementById('venteArticle');
+    if (articleSelect) {
+        articleSelect.innerHTML = '<option value="">Sélectionner un article</option>';
+        
+        articles.forEach(article => {
+            const option = document.createElement('option');
+            option.value = article.id;
+            option.textContent = `${article.reference} - ${article.designation}`;
+            option.dataset.price = article.price;
+            articleSelect.appendChild(option);
+        });
+    }
+    
+    const dateInput = document.getElementById('venteDate');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    
+    setupVenteCalculation();
+    showModal('venteModal');
 }
 
 function setupAchatCalculation() {
     const quantityInput = document.getElementById('achatQuantity');
     const priceInput = document.getElementById('achatPrixUnitaire');
     const totalDisplay = document.getElementById('achatTotalDisplay');
+    
+    if (!quantityInput || !priceInput || !totalDisplay) return;
     
     function calculateAchatTotal() {
         const quantity = parseFloat(quantityInput.value) || 0;
@@ -421,72 +746,41 @@ function setupAchatCalculation() {
     priceInput.addEventListener('input', calculateAchatTotal);
 }
 
-async function handleAchatSubmit(e) {
-    e.preventDefault();
+function setupVenteCalculation() {
+    const articleSelect = document.getElementById('venteArticle');
+    const quantityInput = document.getElementById('venteQuantity');
+    const priceInput = document.getElementById('ventePrixUnitaire');
+    const totalDisplay = document.getElementById('venteTotalDisplay');
     
-    const fournisseur = document.getElementById('achatFournisseur').value;
-    const date = document.getElementById('achatDate').value;
-    const articleId = document.getElementById('achatArticle').value;
-    const quantity = parseInt(document.getElementById('achatQuantity').value);
-    const prixUnitaire = parseFloat(document.getElementById('achatPrixUnitaire').value);
-    const modePaiement = document.getElementById('achatModePaiement').value;
+    if (!articleSelect || !quantityInput || !priceInput || !totalDisplay) return;
     
-    const article = articles.find(a => a.id === articleId);
-    const subtotal = quantity * prixUnitaire;
-    const tva = subtotal * 0.20;
-    const total = subtotal + tva;
-    
-    const achatData = {
-        fournisseur,
-        date,
-        articleId,
-        article: {
-            id: article.id,
-            reference: article.reference,
-            designation: article.designation
-        },
-        quantity,
-        prixUnitaire,
-        subtotal,
-        tva,
-        total,
-        modePaiement,
-        statut: modePaiement === 'credit' ? 'en-cours' : 'paye',
-        createdAt: new Date()
-    };
-
-    try {
-        // Sauvegarder l'achat
-        const docRef = await db.collection('achats').add(achatData);
-        achats.push({ id: docRef.id, ...achatData });
+    function calculateVenteTotal() {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        const subtotal = quantity * price;
+        const tva = subtotal * 0.20;
+        const total = subtotal + tva;
         
-        // Mettre à jour le stock de l'article
-        const articleToUpdate = articles.find(a => a.id === articleId);
-        if (articleToUpdate) {
-            articleToUpdate.stock += quantity;
-            await db.collection('articles').doc(articleId).update({
-                stock: articleToUpdate.stock
-            });
-        }
-        
-        // Créer un paiement si ce n'est pas à crédit
-        if (modePaiement !== 'credit') {
-            await createPaiementFromAchat(achatData);
-        }
-        
-        displayAchats();
-        displayArticles(); // Rafraîchir pour le stock
-        closeModal('achatModal');
-        showNotification('Achat enregistré avec succès', 'success');
-        updateDashboard();
-        
-    } catch (error) {
-        console.error('Erreur enregistrement achat:', error);
-        showNotification('Erreur lors de l\'enregistrement de l\'achat', 'error');
+        totalDisplay.innerHTML = `
+            <div>Sous-total HT: ${subtotal.toFixed(2)} MAD</div>
+            <div>TVA (20%): ${tva.toFixed(2)} MAD</div>
+            <div style="font-weight: bold; color: #2d3748;">Total TTC: ${total.toFixed(2)} MAD</div>
+        `;
     }
+    
+    articleSelect.addEventListener('change', () => {
+        const selectedOption = articleSelect.options[articleSelect.selectedIndex];
+        if (selectedOption.dataset.price) {
+            priceInput.value = selectedOption.dataset.price;
+            calculateVenteTotal();
+        }
+    });
+    
+    quantityInput.addEventListener('input', calculateVenteTotal);
+    priceInput.addEventListener('input', calculateVenteTotal);
 }
 
-// Chargement des données
+// Load data functions
 async function loadData() {
     try {
         await Promise.all([
@@ -543,6 +837,45 @@ async function loadDocuments() {
     }
 }
 
+async function loadAchats() {
+    try {
+        const snapshot = await db.collection('achats').orderBy('createdAt', 'desc').get();
+        achats = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        displayAchats();
+    } catch (error) {
+        console.error('Erreur chargement achats:', error);
+    }
+}
+
+async function loadVentes() {
+    try {
+        const snapshot = await db.collection('ventes').orderBy('createdAt', 'desc').get();
+        ventes = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        displayVentes();
+    } catch (error) {
+        console.error('Erreur chargement ventes:', error);
+    }
+}
+
+async function loadPaiements() {
+    try {
+        const snapshot = await db.collection('paiements').orderBy('createdAt', 'desc').get();
+        paiements = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        displayPaiements();
+    } catch (error) {
+        console.error('Erreur chargement paiements:', error);
+    }
+}
+
 async function loadCompanySettings() {
     try {
         const doc = await db.collection('settings').doc('company').get();
@@ -555,7 +888,7 @@ async function loadCompanySettings() {
     }
 }
 
-// Gestion des clients
+// Client management functions
 async function handleClientSubmit(e) {
     e.preventDefault();
     
@@ -581,6 +914,8 @@ async function handleClientSubmit(e) {
 
 function displayClients() {
     const tbody = document.querySelector('#clientsTable tbody');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
     clients.forEach(client => {
@@ -616,7 +951,7 @@ async function deleteClient(clientId) {
     }
 }
 
-// Gestion des articles
+// Article management functions
 async function handleArticleSubmit(e) {
     e.preventDefault();
     
@@ -642,6 +977,8 @@ async function handleArticleSubmit(e) {
 
 function displayArticles() {
     const tbody = document.querySelector('#articlesTable tbody');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
     articles.forEach(article => {
@@ -677,9 +1014,11 @@ async function deleteArticle(articleId) {
     }
 }
 
-// Gestion des documents
+// Document management functions
 function populateClientSelect() {
     const select = document.getElementById('documentClient');
+    if (!select) return;
+    
     select.innerHTML = '<option value="">Sélectionner un client</option>';
     
     clients.forEach(client => {
@@ -706,6 +1045,8 @@ function populateArticleSelects() {
 
 function addItem() {
     const itemsList = document.getElementById('itemsList');
+    if (!itemsList) return;
+    
     const itemRow = document.createElement('div');
     itemRow.className = 'item-row';
     itemRow.innerHTML = `
@@ -716,7 +1057,6 @@ function addItem() {
     `;
     itemsList.appendChild(itemRow);
     
-    // Populer le nouveau select
     const newSelect = itemRow.querySelector('.item-article');
     newSelect.innerHTML = '<option value="">Sélectionner un article</option>';
     articles.forEach(article => {
@@ -727,7 +1067,6 @@ function addItem() {
         newSelect.appendChild(option);
     });
 
-    // Ajouter les événements pour calcul automatique
     setupItemEventListeners(itemRow);
 }
 
@@ -741,16 +1080,23 @@ function setupItemEventListeners(itemRow) {
     const quantityInput = itemRow.querySelector('.item-quantity');
     const priceInput = itemRow.querySelector('.item-price');
 
-    articleSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        if (selectedOption.dataset.price) {
-            priceInput.value = selectedOption.dataset.price;
-            calculateTotal();
-        }
-    });
+    if (articleSelect) {
+        articleSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.dataset.price) {
+                priceInput.value = selectedOption.dataset.price;
+                calculateTotal();
+            }
+        });
+    }
 
-    quantityInput.addEventListener('input', calculateTotal);
-    priceInput.addEventListener('input', calculateTotal);
+    if (quantityInput) {
+        quantityInput.addEventListener('input', calculateTotal);
+    }
+    
+    if (priceInput) {
+        priceInput.addEventListener('input', calculateTotal);
+    }
 }
 
 function calculateTotal() {
@@ -763,20 +1109,21 @@ function calculateTotal() {
         subtotal += quantity * price;
     });
     
-    const tva = subtotal * 0.20; // TVA 20%
+    const tva = subtotal * 0.20;
     const total = subtotal + tva;
     
-    // Mettre à jour l'affichage avec le détail
     const totalElement = document.getElementById('documentTotal');
-    totalElement.innerHTML = `
-        <div style="text-align: right;">
-            <div>Sous-total HT: ${subtotal.toFixed(2)} MAD</div>
-            <div>TVA (20%): ${tva.toFixed(2)} MAD</div>
-            <div style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 0.5rem;">
-                Total TTC: ${total.toFixed(2)} MAD
+    if (totalElement) {
+        totalElement.innerHTML = `
+            <div style="text-align: right;">
+                <div>Sous-total HT: ${subtotal.toFixed(2)} MAD</div>
+                <div>TVA (20%): ${tva.toFixed(2)} MAD</div>
+                <div style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 0.5rem;">
+                    Total TTC: ${total.toFixed(2)} MAD
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    }
     
     return { subtotal, tva, total };
 }
@@ -797,7 +1144,7 @@ async function handleDocumentSubmit(e) {
             const article = articles.find(a => a.id === articleId);
             items.push({
                 articleId,
-                article: article,
+                article,
                 quantity,
                 price,
                 total: quantity * price
@@ -827,7 +1174,6 @@ async function handleDocumentSubmit(e) {
         const docRef = await db.collection('documents').add(documentData);
         documents.push({ id: docRef.id, ...documentData });
         
-        // Si c'est une facture, créer automatiquement une vente
         if (currentDocumentType === 'facture') {
             await createSaleFromInvoice(documentData);
         }
@@ -852,6 +1198,8 @@ function generateDocumentNumber(type) {
 
 function displayDocuments() {
     const tbody = document.querySelector('#documentsTable tbody');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
     documents.forEach(doc => {
@@ -883,20 +1231,493 @@ function displayDocuments() {
     });
 }
 
-// Aperçu et impression de documents
+// Achat handling
+async function handleAchatSubmit(e) {
+    e.preventDefault();
+    
+    const fournisseur = document.getElementById('achatFournisseur').value;
+    const date = document.getElementById('achatDate').value;
+    const articleId = document.getElementById('achatArticle').value;
+    const quantity = parseInt(document.getElementById('achatQuantity').value);
+    const prixUnitaire = parseFloat(document.getElementById('achatPrixUnitaire').value);
+    const modePaiement = document.getElementById('achatModePaiement').value;
+    
+    const article = articles.find(a => a.id === articleId);
+    const subtotal = quantity * prixUnitaire;
+    const tva = subtotal * 0.20;
+    const total = subtotal + tva;
+    
+    const achatData = {
+        fournisseur,
+        date,
+        articleId,
+        article: {
+            id: article.id,
+            reference: article.reference,
+            designation: article.designation
+        },
+        quantity,
+        prixUnitaire,
+        subtotal,
+        tva,
+        total,
+        modePaiement,
+        statut: modePaiement === 'credit' ? 'en-cours' : 'paye',
+        createdAt: new Date()
+    };
+
+    try {
+        const docRef = await db.collection('achats').add(achatData);
+        achats.push({ id: docRef.id, ...achatData });
+        
+        const articleToUpdate = articles.find(a => a.id === articleId);
+        if (articleToUpdate) {
+            articleToUpdate.stock += quantity;
+            await db.collection('articles').doc(articleId).update({
+                stock: articleToUpdate.stock
+            });
+        }
+        
+        if (modePaiement !== 'credit') {
+            await createPaiementFromAchat(achatData);
+        }
+        
+        displayAchats();
+        displayArticles();
+        closeModal('achatModal');
+        showNotification('Achat enregistré avec succès', 'success');
+        updateDashboard();
+        
+    } catch (error) {
+        console.error('Erreur enregistrement achat:', error);
+        showNotification('Erreur lors de l\'enregistrement de l\'achat', 'error');
+    }
+}
+
+// Vente handling
+async function handleVenteSubmit(e) {
+    e.preventDefault();
+    
+    const clientId = document.getElementById('venteClient').value;
+    const date = document.getElementById('venteDate').value;
+    const articleId = document.getElementById('venteArticle').value;
+    const quantity = parseInt(document.getElementById('venteQuantity').value);
+    const prixUnitaire = parseFloat(document.getElementById('ventePrixUnitaire').value);
+    const modePaiement = document.getElementById('venteModePaiement').value;
+    
+    const client = clients.find(c => c.id === clientId);
+    const article = articles.find(a => a.id === articleId);
+    
+    if (article.stock < quantity) {
+        showNotification('Stock insuffisant pour cet article', 'error');
+        return;
+    }
+    
+    const subtotal = quantity * prixUnitaire;
+    const tva = subtotal * 0.20;
+    const total = subtotal + tva;
+    
+    const venteData = {
+        type: 'vente-directe',
+        clientId,
+        clientName: client.name,
+        date,
+        items: [{
+            articleId,
+            article: {
+                id: article.id,
+                reference: article.reference,
+                designation: article.designation
+            },
+            quantity,
+            price: prixUnitaire,
+            total: subtotal
+        }],
+        subtotal,
+        tva,
+        total,
+        modePaiement,
+        statut: modePaiement === 'credit' ? 'en-cours' : 'paye',
+        createdAt: new Date()
+    };
+
+    try {
+        const docRef = await db.collection('ventes').add(venteData);
+        ventes.push({ id: docRef.id, ...venteData });
+        
+        const articleToUpdate = articles.find(a => a.id === articleId);
+        if (articleToUpdate) {
+            articleToUpdate.stock -= quantity;
+            await db.collection('articles').doc(articleId).update({
+                stock: articleToUpdate.stock
+            });
+        }
+        
+        if (modePaiement !== 'credit') {
+            await createPaiementFromVente(venteData);
+        }
+        
+        displayVentes();
+        displayArticles();
+        closeModal('venteModal');
+        showNotification('Vente enregistrée avec succès', 'success');
+        updateDashboard();
+        
+    } catch (error) {
+        console.error('Erreur enregistrement vente:', error);
+        showNotification('Erreur lors de l\'enregistrement de la vente', 'error');
+    }
+}
+
+// Display functions
+function displayAchats() {
+    const tbody = document.querySelector('#achatsTable tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    achats.forEach(achat => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${new Date(achat.date).toLocaleDateString('fr-FR')}</td>
+            <td>${achat.fournisseur}</td>
+            <td>${achat.article.reference} - ${achat.article.designation}</td>
+            <td>${achat.quantity}</td>
+            <td>${achat.total.toFixed(2)} MAD</td>
+            <td><span class="status-badge ${achat.statut}">${achat.statut}</span></td>
+            <td>
+                <button class="btn btn-info btn-small" onclick="viewAchatDetails('${achat.id}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-danger btn-small" onclick="deleteAchat('${achat.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+    });
+}
+
+function displayVentes() {
+    const tbody = document.querySelector('#ventesTable tbody');
+    if (!tbody) {
+        console.warn('Tableau des ventes (#ventesTable tbody) non trouvé dans le DOM');
+        return;
+    }
+
+    tbody.innerHTML = '';
+    
+    ventes.forEach(vente => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${new Date(vente.date).toLocaleDateString('fr-FR')}</td>
+            <td>${vente.clientName}</td>
+            <td>${vente.total.toFixed(2)} MAD</td>
+            <td>${vente.modePaiement || 'Facture'}</td>
+            <td><span class="status-badge ${vente.statut}">${vente.statut}</span></td>
+            <td>
+                <button class="btn btn-info btn-small" onclick="viewVenteDetails('${vente.id}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+    });
+}
+
+function displayPaiements() {
+    const tbody = document.querySelector('#paiementsTable tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    paiements.forEach(paiement => {
+        const row = tbody.insertRow();
+        const typeLabel = paiement.type === 'entree' ? 'Entrée' : 'Sortie';
+        const typeClass = paiement.type === 'entree' ? 'success' : 'danger';
+        
+        row.innerHTML = `
+            <td>${new Date(paiement.date).toLocaleDateString('fr-FR')}</td>
+            <td><span class="status-badge ${typeClass}">${typeLabel}</span></td>
+            <td>${paiement.fournisseur || paiement.clientName || paiement.description}</td>
+            <td>${paiement.montant.toFixed(2)} MAD</td>
+            <td>${paiement.modePaiement || '-'}</td>
+            <td><span class="status-badge ${paiement.statut}">${paiement.statut}</span></td>
+        `;
+    });
+}
+
+// Company settings
+async function handleCompanySubmit(e) {
+    e.preventDefault();
+    
+    const companyData = {
+        name: document.getElementById('companyName').value,
+        address: document.getElementById('companyAddress').value,
+        phone: document.getElementById('companyPhone').value,
+        email: document.getElementById('companyEmail').value
+    };
+
+    try {
+        await db.collection('settings').doc('company').set({
+            ...companySettings,
+            ...companyData
+        });
+        
+        companySettings = { ...companySettings, ...companyData };
+        updateCompanyDisplay();
+        showNotification('Paramètres sauvegardés avec succès', 'success');
+    } catch (error) {
+        console.error('Erreur sauvegarde paramètres:', error);
+        showNotification('Erreur lors de la sauvegarde', 'error');
+    }
+}
+
+function updateCompanyDisplay() {
+    if (companySettings.logoUrl) {
+        const logoImg = document.getElementById('companyLogo');
+        if (logoImg) {
+            logoImg.src = companySettings.logoUrl;
+            logoImg.style.display = 'block';
+        }
+    }
+    
+    const fields = ['companyName', 'companyAddress', 'companyPhone', 'companyEmail'];
+    const values = [companySettings.name, companySettings.address, companySettings.phone || '', companySettings.email || ''];
+    
+    fields.forEach((fieldId, index) => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.value = values[index];
+        }
+    });
+}
+
+// Dashboard functions
+function calculateBenefices() {
+    const totalVentes = ventes
+        .filter(v => v.statut === 'paye' || v.statut === 'valide')
+        .reduce((sum, vente) => sum + vente.total, 0);
+    
+    const totalAchats = achats
+        .reduce((sum, achat) => sum + achat.total, 0);
+    
+    const benefice = totalVentes - totalAchats;
+    const margePercent = totalVentes > 0 ? ((benefice / totalVentes) * 100) : 0;
+    
+    return {
+        totalVentes,
+        totalAchats,
+        benefice,
+        margePercent
+    };
+}
+
+function updateDashboard() {
+    const elements = {
+        totalClients: document.getElementById('totalClients'),
+        totalFactures: document.getElementById('totalFactures'),
+        totalArticles: document.getElementById('totalArticles'),
+        totalVentes: document.getElementById('totalVentes')
+    };
+    
+    if (elements.totalClients) elements.totalClients.textContent = clients.length;
+    if (elements.totalFactures) elements.totalFactures.textContent = documents.filter(d => d.type === 'facture').length;
+    if (elements.totalArticles) elements.totalArticles.textContent = articles.length;
+    
+    const stats = calculateBenefices();
+    if (elements.totalVentes) elements.totalVentes.textContent = `${stats.totalVentes.toFixed(2)} MAD`;
+    
+    // Add additional stats if not present
+    const statsGrid = document.querySelector('.stats-grid');
+    if (statsGrid && !document.getElementById('totalAchats')) {
+        addAdditionalStats(statsGrid, stats);
+    } else {
+        updateAdditionalStats(stats);
+    }
+}
+
+function addAdditionalStats(statsGrid, stats) {
+    const additionalStats = [
+        {
+            id: 'totalAchats',
+            value: `${stats.totalAchats.toFixed(2)} MAD`,
+            label: 'Total Achats',
+            icon: 'fas fa-shopping-bag',
+            color: '#f56565'
+        },
+        {
+            id: 'totalBenefice',
+            value: `${stats.benefice.toFixed(2)} MAD`,
+            label: `Bénéfice (${stats.margePercent.toFixed(1)}%)`,
+            icon: 'fas fa-chart-line',
+            color: stats.benefice >= 0 ? '#48bb78' : '#f56565'
+        },
+        {
+            id: 'totalMarge',
+            value: `${stats.margePercent.toFixed(1)}%`,
+            label: 'Marge Bénéficiaire',
+            icon: 'fas fa-percentage',
+            color: '#9f7aea'
+        }
+    ];
+    
+    additionalStats.forEach(stat => {
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        card.innerHTML = `
+            <div class="stat-icon" style="background: linear-gradient(135deg, ${stat.color}, ${stat.color});">
+                <i class="${stat.icon}"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="${stat.id}">${stat.value}</h3>
+                <p>${stat.label}</p>
+            </div>
+        `;
+        statsGrid.appendChild(card);
+    });
+}
+
+function updateAdditionalStats(stats) {
+    const elements = {
+        totalAchats: document.getElementById('totalAchats'),
+        totalBenefice: document.getElementById('totalBenefice'),
+        totalMarge: document.getElementById('totalMarge')
+    };
+    
+    if (elements.totalAchats) elements.totalAchats.textContent = `${stats.totalAchats.toFixed(2)} MAD`;
+    if (elements.totalBenefice) elements.totalBenefice.textContent = `${stats.benefice.toFixed(2)} MAD`;
+    if (elements.totalMarge) elements.totalMarge.textContent = `${stats.margePercent.toFixed(1)}%`;
+    
+    // Update benefice color
+    const beneficeIcon = elements.totalBenefice?.closest('.stat-card')?.querySelector('.stat-icon');
+    if (beneficeIcon) {
+        const color = stats.benefice >= 0 ? '#48bb78' : '#f56565';
+        beneficeIcon.style.background = `linear-gradient(135deg, ${color}, ${color})`;
+    }
+}
+
+// Utility functions
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 3000;
+        animation: slideInRight 0.3s ease-out;
+        background: ${type === 'success' ? '#48bb78' : type === 'error' ? '#f56565' : '#4299e1'};
+        max-width: 400px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Placeholder functions for missing implementations
+function editClient(clientId) {
+    console.log('Édition client:', clientId);
+    showNotification('Fonctionnalité en développement', 'info');
+}
+
+function editArticle(articleId) {
+    console.log('Édition article:', articleId);
+    showNotification('Fonctionnalité en développement', 'info');
+}
+
+function viewAchatDetails(achatId) {
+    const achat = achats.find(a => a.id === achatId);
+    if (achat) {
+        alert(`Détails de l'achat:
+Fournisseur: ${achat.fournisseur}
+Article: ${achat.article.designation}
+Quantité: ${achat.quantity}
+Prix unitaire HT: ${achat.prixUnitaire.toFixed(2)} MAD
+Total TTC: ${achat.total.toFixed(2)} MAD
+Mode de paiement: ${achat.modePaiement}
+Statut: ${achat.statut}`);
+    }
+}
+
+function viewVenteDetails(venteId) {
+    const vente = ventes.find(v => v.id === venteId);
+    if (vente) {
+        let itemsText = vente.items.map(item => 
+            `- ${item.article.designation}: ${item.quantity} x ${item.price.toFixed(2)} MAD`
+        ).join('\n');
+        
+        alert(`Détails de la vente:
+Client: ${vente.clientName}
+Document: ${vente.documentNumber || 'Vente directe'}
+Articles:
+${itemsText}
+Total TTC: ${vente.total.toFixed(2)} MAD
+Statut: ${vente.statut}`);
+    }
+}
+
+async function deleteAchat(achatId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet achat ?')) {
+        try {
+            const achat = achats.find(a => a.id === achatId);
+            
+            if (achat) {
+                const article = articles.find(a => a.id === achat.articleId);
+                if (article && article.stock >= achat.quantity) {
+                    article.stock -= achat.quantity;
+                    await db.collection('articles').doc(achat.articleId).update({
+                        stock: article.stock
+                    });
+                }
+            }
+            
+            await db.collection('achats').doc(achatId).delete();
+            achats = achats.filter(a => a.id !== achatId);
+            displayAchats();
+            displayArticles();
+            updateDashboard();
+            showNotification('Achat supprimé avec succès', 'success');
+        } catch (error) {
+            console.error('Erreur suppression achat:', error);
+            showNotification('Erreur lors de la suppression', 'error');
+        }
+    }
+}
+
+async function deleteDocument(documentId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) {
+        try {
+            await db.collection('documents').doc(documentId).delete();
+            documents = documents.filter(d => d.id !== documentId);
+            displayDocuments();
+            showNotification('Document supprimé avec succès', 'success');
+        } catch (error) {
+            console.error('Erreur suppression document:', error);
+            showNotification('Erreur lors de la suppression', 'error');
+        }
+    }
+}
+
+// Document preview and printing functions [SUITE...]
 function previewDocument(documentId = null) {
     let doc;
     
     if (documentId) {
         doc = documents.find(d => d.id === documentId);
         
-        // Compatibilité avec les anciens documents sans TVA
         if (doc && !doc.subtotal) {
-            doc.subtotal = doc.total / 1.2; // Calculer le HT à partir du TTC
+            doc.subtotal = doc.total / 1.2;
             doc.tva = doc.total - doc.subtotal;
         }
     } else {
-        // Créer un aperçu temporaire pour le document en cours
         const clientId = document.getElementById('documentClient').value;
         const date = document.getElementById('documentDate').value;
         const items = [];
@@ -910,7 +1731,7 @@ function previewDocument(documentId = null) {
                 const article = articles.find(a => a.id === articleId);
                 items.push({
                     articleId,
-                    article: article,
+                    article,
                     quantity,
                     price,
                     total: quantity * price
@@ -941,7 +1762,10 @@ function previewDocument(documentId = null) {
     }
 
     const previewContent = generateDocumentHTML(doc);
-    document.getElementById('previewContent').innerHTML = previewContent;
+    const previewElement = document.getElementById('previewContent');
+    if (previewElement) {
+        previewElement.innerHTML = previewContent;
+    }
     showModal('previewModal');
 }
 
@@ -1040,7 +1864,10 @@ function printDocument(documentId = null) {
     }
     
     setTimeout(() => {
-        const printContent = document.getElementById('previewContent').innerHTML;
+        const previewContent = document.getElementById('previewContent');
+        if (!previewContent) return;
+        
+        const printContent = previewContent.innerHTML;
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
             <html>
@@ -1071,29 +1898,143 @@ function printDocument(documentId = null) {
     }, 500);
 }
 
-// Gestion des paramètres
-async function handleCompanySubmit(e) {
-    e.preventDefault();
-    
-    const companyData = {
-        name: document.getElementById('companyName').value,
-        address: document.getElementById('companyAddress').value,
-        phone: document.getElementById('companyPhone').value,
-        email: document.getElementById('companyEmail').value
+// Helper functions for sales and payments
+async function createSaleFromInvoice(invoiceData) {
+    const venteData = {
+        type: 'facture',
+        documentId: invoiceData.id,
+        documentNumber: invoiceData.number,
+        clientId: invoiceData.clientId,
+        clientName: invoiceData.client.name,
+        date: invoiceData.date,
+        items: invoiceData.items,
+        subtotal: invoiceData.subtotal,
+        tva: invoiceData.tva,
+        total: invoiceData.total,
+        modePaiement: 'facture',
+        statut: 'en-cours',
+        createdAt: new Date()
     };
 
     try {
-        await db.collection('settings').doc('company').set({
-            ...companySettings,
-            ...companyData
-        });
+        const docRef = await db.collection('ventes').add(venteData);
+        ventes.push({ id: docRef.id, ...venteData });
         
-        companySettings = { ...companySettings, ...companyData };
-        updateCompanyDisplay();
-        showNotification('Paramètres sauvegardés avec succès', 'success');
+        for (const item of invoiceData.items) {
+            const article = articles.find(a => a.id === item.articleId);
+            if (article && article.stock >= item.quantity) {
+                article.stock -= item.quantity;
+                await db.collection('articles').doc(item.articleId).update({
+                    stock: article.stock
+                });
+            }
+        }
+        
+        displayVentes();
+        displayArticles();
+        
     } catch (error) {
-        console.error('Erreur sauvegarde paramètres:', error);
-        showNotification('Erreur lors de la sauvegarde', 'error');
+        console.error('Erreur création vente:', error);
+    }
+}
+
+async function createPaiementFromAchat(achatData) {
+    const paiementData = {
+        type: 'sortie',
+        reference: `ACH-${Date.now()}`,
+        description: `Achat - ${achatData.article.designation}`,
+        fournisseur: achatData.fournisseur,
+        montant: achatData.total,
+        modePaiement: achatData.modePaiement,
+        date: achatData.date,
+        statut: 'valide',
+        createdAt: new Date()
+    };
+
+    try {
+        const docRef = await db.collection('paiements').add(paiementData);
+        paiements.push({ id: docRef.id, ...paiementData });
+        displayPaiements();
+    } catch (error) {
+        console.error('Erreur création paiement achat:', error);
+    }
+}
+
+async function createPaiementFromVente(venteData) {
+    const paiementData = {
+        type: 'entree',
+        reference: `VENT-${Date.now()}`,
+        description: `Vente - ${venteData.items[0].article.designation}`,
+        client: venteData.clientId,
+        clientName: venteData.clientName,
+        montant: venteData.total,
+        modePaiement: venteData.modePaiement,
+        date: venteData.date,
+        statut: 'valide',
+        createdAt: new Date()
+    };
+
+    try {
+        const docRef = await db.collection('paiements').add(paiementData);
+        paiements.push({ id: docRef.id, ...paiementData });
+        displayPaiements();
+    } catch (error) {
+        console.error('Erreur création paiement vente:', error);
+    }
+}
+
+// File upload functions
+async function smartUploadLogo() {
+    const fileInput = document.getElementById('logoUpload');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showNotification('Veuillez sélectionner un fichier', 'error');
+        return;
+    }
+
+    try {
+        const testRef = storage.ref('test/permission_test.txt');
+        await testRef.putString('test');
+        await testRef.delete();
+        
+        await uploadLogo();
+        
+    } catch (error) {
+        if (error.code === 'storage/unauthorized') {
+            showNotification('Règles Firebase Storage à configurer - Mode local activé', 'info');
+        } else {
+            showNotification('Firebase Storage indisponible - Mode local activé', 'info');
+        }
+        
+        uploadLogoLocal();
+    }
+}
+
+async function smartUploadCachet() {
+    const fileInput = document.getElementById('cachetUpload');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showNotification('Veuillez sélectionner un fichier', 'error');
+        return;
+    }
+
+    try {
+        const testRef = storage.ref('test/permission_test.txt');
+        await testRef.putString('test');
+        await testRef.delete();
+        
+        await uploadCachet();
+        
+    } catch (error) {
+        if (error.code === 'storage/unauthorized') {
+            showNotification('Règles Firebase Storage à configurer - Mode local activé', 'info');
+        } else {
+            showNotification('Firebase Storage indisponible - Mode local activé', 'info');
+        }
+        
+        uploadCachetLocal();
     }
 }
 
@@ -1106,13 +2047,11 @@ async function uploadLogo() {
         return;
     }
 
-    // Vérifier le type de fichier
     if (!file.type.startsWith('image/')) {
         showNotification('Veuillez sélectionner un fichier image', 'error');
         return;
     }
 
-    // Vérifier la taille du fichier (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
         showNotification('Le fichier est trop volumineux (max 5MB)', 'error');
         return;
@@ -1121,14 +2060,12 @@ async function uploadLogo() {
     try {
         showNotification('Upload en cours...', 'info');
         
-        // Créer un nom unique pour éviter les conflits
         const timestamp = Date.now();
         const fileExtension = file.name.split('.').pop();
         const fileName = `logo_${timestamp}.${fileExtension}`;
         
         const storageRef = storage.ref(`images/${fileName}`);
         
-        // Upload avec metadata
         const metadata = {
             contentType: file.type,
             customMetadata: {
@@ -1140,14 +2077,12 @@ async function uploadLogo() {
         const snapshot = await storageRef.put(file, metadata);
         const downloadURL = await snapshot.ref.getDownloadURL();
         
-        // Sauvegarder dans Firestore
         companySettings.logoUrl = downloadURL;
         await db.collection('settings').doc('company').set(companySettings, { merge: true });
         
         updateCompanyDisplay();
         showNotification('Logo téléchargé avec succès', 'success');
         
-        // Réinitialiser l'input
         fileInput.value = '';
         
     } catch (error) {
@@ -1174,13 +2109,11 @@ async function uploadCachet() {
         return;
     }
 
-    // Vérifier le type de fichier
     if (!file.type.startsWith('image/')) {
         showNotification('Veuillez sélectionner un fichier image', 'error');
         return;
     }
 
-    // Vérifier la taille du fichier (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
         showNotification('Le fichier est trop volumineux (max 5MB)', 'error');
         return;
@@ -1189,14 +2122,12 @@ async function uploadCachet() {
     try {
         showNotification('Upload en cours...', 'info');
         
-        // Créer un nom unique pour éviter les conflits
         const timestamp = Date.now();
         const fileExtension = file.name.split('.').pop();
         const fileName = `cachet_${timestamp}.${fileExtension}`;
         
         const storageRef = storage.ref(`images/${fileName}`);
         
-        // Upload avec metadata
         const metadata = {
             contentType: file.type,
             customMetadata: {
@@ -1208,13 +2139,11 @@ async function uploadCachet() {
         const snapshot = await storageRef.put(file, metadata);
         const downloadURL = await snapshot.ref.getDownloadURL();
         
-        // Sauvegarder dans Firestore
         companySettings.cachetUrl = downloadURL;
         await db.collection('settings').doc('company').set(companySettings, { merge: true });
         
         showNotification('Cachet téléchargé avec succès', 'success');
         
-        // Réinitialiser l'input
         fileInput.value = '';
         
     } catch (error) {
@@ -1232,532 +2161,6 @@ async function uploadCachet() {
     }
 }
 
-function updateCompanyDisplay() {
-    if (companySettings.logoUrl) {
-        const logoImg = document.getElementById('companyLogo');
-        logoImg.src = companySettings.logoUrl;
-        logoImg.style.display = 'block';
-    }
-    
-    // Mettre à jour les champs du formulaire
-    document.getElementById('companyName').value = companySettings.name;
-    document.getElementById('companyAddress').value = companySettings.address;
-    document.getElementById('companyPhone').value = companySettings.phone || '';
-    document.getElementById('companyEmail').value = companySettings.email || '';
-}
-
-async function loadPaiements() {
-    try {
-        const snapshot = await db.collection('paiements').orderBy('createdAt', 'desc').get();
-        paiements = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        displayPaiements();
-    } catch (error) {
-        console.error('Erreur chargement paiements:', error);
-    }
-}
-
-function displayPaiements() {
-    const tbody = document.querySelector('#paiementsTable tbody');
-    tbody.innerHTML = '';
-    
-    paiements.forEach(paiement => {
-        const row = tbody.insertRow();
-        const typeLabel = paiement.type === 'entree' ? 'Entrée' : 'Sortie';
-        const typeClass = paiement.type === 'entree' ? 'success' : 'danger';
-        
-        row.innerHTML = `
-            <td>${new Date(paiement.date).toLocaleDateString('fr-FR')}</td>
-            <td><span class="status-badge ${typeClass}">${typeLabel}</span></td>
-            <td>${paiement.fournisseur || paiement.client || paiement.description}</td>
-            <td>${paiement.montant.toFixed(2)} MAD</td>
-            <td>${paiement.modePaiement || '-'}</td>
-            <td><span class="status-badge ${paiement.statut}">${paiement.statut}</span></td>
-        `;
-    });
-}
-
-// Calcul des bénéfices
-function calculateBenefices() {
-    const totalVentes = ventes
-        .filter(v => v.statut === 'paye' || v.statut === 'valide')
-        .reduce((sum, vente) => sum + vente.total, 0);
-    
-    const totalAchats = achats
-        .reduce((sum, achat) => sum + achat.total, 0);
-    
-    const benefice = totalVentes - totalAchats;
-    const margePercent = totalVentes > 0 ? ((benefice / totalVentes) * 100) : 0;
-    
-    return {
-        totalVentes,
-        totalAchats,
-        benefice,
-        margePercent
-    };
-}
-
-// Dashboard et statistiques amélioré
-function updateDashboard() {
-    // Statistiques de base
-    document.getElementById('totalClients').textContent = clients.length;
-    document.getElementById('totalFactures').textContent = documents.filter(d => d.type === 'facture').length;
-    document.getElementById('totalArticles').textContent = articles.length;
-    
-    // Calculs financiers
-    const stats = calculateBenefices();
-    document.getElementById('totalVentes').textContent = `${stats.totalVentes.toFixed(2)} MAD`;
-    
-    // Ajouter les nouvelles statistiques
-    const statsGrid = document.querySelector('.stats-grid');
-    
-    // Vérifier si les cartes existent déjà
-    if (!document.getElementById('totalAchats')) {
-        // Carte Achats
-        const achatCard = document.createElement('div');
-        achatCard.className = 'stat-card';
-        achatCard.innerHTML = `
-            <div class="stat-icon" style="background: linear-gradient(135deg, #f56565, #e53e3e);">
-                <i class="fas fa-shopping-bag"></i>
-            </div>
-            <div class="stat-info">
-                <h3 id="totalAchats">${stats.totalAchats.toFixed(2)} MAD</h3>
-                <p>Total Achats</p>
-            </div>
-        `;
-        
-        // Carte Bénéfices
-        const beneficeCard = document.createElement('div');
-        beneficeCard.className = 'stat-card';
-        const beneficeColor = stats.benefice >= 0 ? '#48bb78' : '#f56565';
-        beneficeCard.innerHTML = `
-            <div class="stat-icon" style="background: linear-gradient(135deg, ${beneficeColor}, ${beneficeColor});">
-                <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="stat-info">
-                <h3 id="totalBenefice">${stats.benefice.toFixed(2)} MAD</h3>
-                <p>Bénéfice (${stats.margePercent.toFixed(1)}%)</p>
-            </div>
-        `;
-        
-        // Carte Marge
-        const margeCard = document.createElement('div');
-        margeCard.className = 'stat-card';
-        margeCard.innerHTML = `
-            <div class="stat-icon" style="background: linear-gradient(135deg, #9f7aea, #805ad5);">
-                <i class="fas fa-percentage"></i>
-            </div>
-            <div class="stat-info">
-                <h3 id="totalMarge">${stats.margePercent.toFixed(1)}%</h3>
-                <p>Marge Bénéficiaire</p>
-            </div>
-        `;
-        
-        statsGrid.appendChild(achatCard);
-        statsGrid.appendChild(beneficeCard);
-        statsGrid.appendChild(margeCard);
-    } else {
-        // Mettre à jour les valeurs existantes
-        document.getElementById('totalAchats').textContent = `${stats.totalAchats.toFixed(2)} MAD`;
-        document.getElementById('totalBenefice').textContent = `${stats.benefice.toFixed(2)} MAD`;
-        document.getElementById('totalMarge').textContent = `${stats.margePercent.toFixed(1)}%`;
-        
-        // Mettre à jour la couleur du bénéfice
-        const beneficeIcon = document.getElementById('totalBenefice').closest('.stat-card').querySelector('.stat-icon');
-        const beneficeColor = stats.benefice >= 0 ? '#48bb78' : '#f56565';
-        beneficeIcon.style.background = `linear-gradient(135deg, ${beneficeColor}, ${beneficeColor})`;
-    }
-}
-
-// Fonctions utilitaires
-function showNotification(message, type = 'info') {
-    // Créer une notification temporaire
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 1rem 2rem;
-        border-radius: 8px;
-        color: white;
-        font-weight: 500;
-        z-index: 3000;
-        animation: slideIn 0.3s ease-out;
-        background: ${type === 'success' ? '#48bb78' : type === 'error' ? '#f56565' : '#4299e1'};
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
-
-function initializeApp() {
-    // Ajouter les écouteurs pour le calcul automatique des totaux
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('item-article') || 
-            e.target.classList.contains('item-quantity') || 
-            e.target.classList.contains('item-price')) {
-            calculateTotal();
-        }
-    });
-
-    // Configurer les événements pour la première ligne d'articles
-    const firstRow = document.querySelector('.item-row');
-    if (firstRow) {
-        setupItemEventListeners(firstRow);
-    }
-}
-
-async function loadAchats() {
-    try {
-        const snapshot = await db.collection('achats').orderBy('createdAt', 'desc').get();
-        achats = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        displayAchats();
-    } catch (error) {
-        console.error('Erreur chargement achats:', error);
-    }
-}
-
-async function loadVentes() {
-    try {
-        const snapshot = await db.collection('ventes').orderBy('createdAt', 'desc').get();
-        ventes = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        displayVentes();
-    } catch (error) {
-        console.error('Erreur chargement ventes:', error);
-    }
-}
-
-function displayAchats() {
-    const tbody = document.querySelector('#achatsTable tbody');
-    tbody.innerHTML = '';
-    
-    achats.forEach(achat => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${new Date(achat.date).toLocaleDateString('fr-FR')}</td>
-            <td>${achat.fournisseur}</td>
-            <td>${achat.article.reference} - ${achat.article.designation}</td>
-            <td>${achat.quantity}</td>
-            <td>${achat.total.toFixed(2)} MAD</td>
-            <td><span class="status-badge ${achat.statut}">${achat.statut}</span></td>
-            <td>
-                <button class="btn btn-info btn-small" onclick="viewAchatDetails('${achat.id}')">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn btn-danger btn-small" onclick="deleteAchat('${achat.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-    });
-}
-
-function displayVentes() {
-    const tbody = document.querySelector('#ventesTable tbody');
-    tbody.innerHTML = '';
-    
-    ventes.forEach(vente => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${new Date(vente.date).toLocaleDateString('fr-FR')}</td>
-            <td>${vente.clientName}</td>
-            <td>${vente.total.toFixed(2)} MAD</td>
-            <td>${vente.modePaiement || 'Facture'}</td>
-            <td><span class="status-badge ${vente.statut}">${vente.statut}</span></td>
-            <td>
-                <button class="btn btn-info btn-small" onclick="viewVenteDetails('${vente.id}')">
-                    <i class="fas fa-eye"></i>
-                </button>
-            </td>
-        `;
-    });
-}
-
-// Création automatique d'une vente à partir d'une facture
-async function createSaleFromInvoice(invoiceData) {
-    const venteData = {
-        type: 'facture',
-        documentId: invoiceData.id,
-        documentNumber: invoiceData.number,
-        clientId: invoiceData.clientId,
-        clientName: invoiceData.client.name,
-        date: invoiceData.date,
-        items: invoiceData.items,
-        subtotal: invoiceData.subtotal,
-        tva: invoiceData.tva,
-        total: invoiceData.total,
-        modePaiement: 'facture',
-        statut: 'en-cours',
-        createdAt: new Date()
-    };
-
-    try {
-        const docRef = await db.collection('ventes').add(venteData);
-        ventes.push({ id: docRef.id, ...venteData });
-        
-        // Mettre à jour les stocks (décrémenter)
-        for (const item of invoiceData.items) {
-            const article = articles.find(a => a.id === item.articleId);
-            if (article && article.stock >= item.quantity) {
-                article.stock -= item.quantity;
-                await db.collection('articles').doc(item.articleId).update({
-                    stock: article.stock
-                });
-            }
-        }
-        
-        displayVentes();
-        displayArticles(); // Rafraîchir pour le stock
-        
-    } catch (error) {
-        console.error('Erreur création vente:', error);
-    }
-}
-
-// Fonctions d'édition et de visualisation
-function editClient(clientId) {
-    // TODO: Implémenter l'édition de client
-    console.log('Édition client:', clientId);
-}
-
-function editArticle(articleId) {
-    // TODO: Implémenter l'édition d'article
-    console.log('Édition article:', articleId);
-}
-
-function viewAchatDetails(achatId) {
-    const achat = achats.find(a => a.id === achatId);
-    if (achat) {
-        alert(`Détails de l'achat:
-Fournisseur: ${achat.fournisseur}
-Article: ${achat.article.designation}
-Quantité: ${achat.quantity}
-Prix unitaire HT: ${achat.prixUnitaire.toFixed(2)} MAD
-Total TTC: ${achat.total.toFixed(2)} MAD
-Mode de paiement: ${achat.modePaiement}
-Statut: ${achat.statut}`);
-    }
-}
-
-function viewVenteDetails(venteId) {
-    const vente = ventes.find(v => v.id === venteId);
-    if (vente) {
-        let itemsText = vente.items.map(item => 
-            `- ${item.article.designation}: ${item.quantity} x ${item.price.toFixed(2)} MAD`
-        ).join('\n');
-        
-        alert(`Détails de la vente:
-Client: ${vente.clientName}
-Document: ${vente.documentNumber}
-Articles:
-${itemsText}
-Total TTC: ${vente.total.toFixed(2)} MAD
-Statut: ${vente.statut}`);
-    }
-}
-
-async function deleteAchat(achatId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cet achat ?')) {
-        try {
-            const achat = achats.find(a => a.id === achatId);
-            
-            // Réduire le stock de l'article
-            if (achat) {
-                const article = articles.find(a => a.id === achat.articleId);
-                if (article && article.stock >= achat.quantity) {
-                    article.stock -= achat.quantity;
-                    await db.collection('articles').doc(achat.articleId).update({
-                        stock: article.stock
-                    });
-                }
-            }
-            
-            await db.collection('achats').doc(achatId).delete();
-            achats = achats.filter(a => a.id !== achatId);
-            displayAchats();
-            displayArticles();
-            updateDashboard();
-            showNotification('Achat supprimé avec succès', 'success');
-        } catch (error) {
-            console.error('Erreur suppression achat:', error);
-            showNotification('Erreur lors de la suppression', 'error');
-        }
-    }
-}
-
-function editArticle(articleId) {
-    // TODO: Implémenter l'édition d'article
-    console.log('Édition article:', articleId);
-}
-
-async function deleteDocument(documentId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) {
-        try {
-            await db.collection('documents').doc(documentId).delete();
-            documents = documents.filter(d => d.id !== documentId);
-            displayDocuments();
-            showNotification('Document supprimé avec succès', 'success');
-        } catch (error) {
-            console.error('Erreur suppression document:', error);
-            showNotification('Erreur lors de la suppression', 'error');
-        }
-    }
-}
-
-// Détection automatique et gestion intelligente des uploads
-async function smartUploadLogo() {
-    const fileInput = document.getElementById('logoUpload');
-    const file = fileInput.files[0];
-    
-    if (!file) {
-        showNotification('Veuillez sélectionner un fichier', 'error');
-        return;
-    }
-
-    try {
-        // Tester d'abord si Firebase Storage est accessible
-        const testRef = storage.ref('test/permission_test.txt');
-        await testRef.putString('test');
-        await testRef.delete();
-        
-        // Si ça marche, utiliser Firebase Storage
-        await uploadLogo();
-        
-    } catch (error) {
-        if (error.code === 'storage/unauthorized') {
-            showNotification('Règles Firebase Storage à configurer - Mode local activé', 'info');
-        } else {
-            showNotification('Firebase Storage indisponible - Mode local activé', 'info');
-        }
-        
-        // Utiliser le stockage local en fallback
-        uploadLogoLocal();
-    }
-}
-
-async function smartUploadCachet() {
-    const fileInput = document.getElementById('cachetUpload');
-    const file = fileInput.files[0];
-    
-    if (!file) {
-        showNotification('Veuillez sélectionner un fichier', 'error');
-        return;
-    }
-
-    try {
-        // Tester d'abord si Firebase Storage est accessible
-        const testRef = storage.ref('test/permission_test.txt');
-        await testRef.putString('test');
-        await testRef.delete();
-        
-        // Si ça marche, utiliser Firebase Storage
-        await uploadCachet();
-        
-    } catch (error) {
-        if (error.code === 'storage/unauthorized') {
-            showNotification('Règles Firebase Storage à configurer - Mode local activé', 'info');
-        } else {
-            showNotification('Firebase Storage indisponible - Mode local activé', 'info');
-        }
-        
-        // Utiliser le stockage local en fallback
-        uploadCachetLocal();
-    }
-}
-
-// Test de connectivité Firebase Storage amélioré
-async function testFirebaseStorage() {
-    try {
-        // Test avec un fichier temporaire
-        const testRef = storage.ref('test/connectivity_test.txt');
-        const testData = `Test ${new Date().toISOString()}`;
-        
-        // Essayer d'écrire
-        await testRef.putString(testData, 'raw');
-        
-        // Essayer de lire
-        const downloadURL = await testRef.getDownloadURL();
-        
-        // Nettoyer le test
-        await testRef.delete();
-        
-        console.log('✅ Firebase Storage accessible - Test réussi');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Firebase Storage test échoué:', error.code, error.message);
-        
-        if (error.code === 'storage/unauthorized') {
-            console.log('💡 Solution: Configurer les règles Firebase Storage');
-        }
-        
-        return false;
-    }
-}
-
-// Initialisation avec test de connectivité
-async function initializeApp() {
-    // Vérifier la configuration Firebase
-    if (!firebase.apps.length) {
-        showNotification('Configuration Firebase manquante', 'error');
-        return;
-    }
-
-    try {
-        // Test de connectivité Firestore
-        await db.collection('test').doc('connectivity').set({ test: true });
-        await db.collection('test').doc('connectivity').delete();
-        console.log('✅ Firestore accessible');
-    } catch (error) {
-        console.error('❌ Firestore inaccessible:', error);
-        showNotification('Problème de connexion Firestore', 'error');
-    }
-
-    // Test de connectivité Firebase Storage
-    try {
-        const storageAvailable = await testFirebaseStorage();
-        
-        if (!storageAvailable) {
-            console.log('⚠️ Firebase Storage non accessible - Mode local activé');
-            showNotification('Mode local activé pour les images', 'info');
-        } else {
-            console.log('✅ Firebase Storage accessible');
-        }
-    } catch (error) {
-        console.error('❌ Erreur test Firebase Storage:', error);
-        showNotification('Mode local activé pour les images', 'info');
-    }
-    
-    // Ajouter les écouteurs pour le calcul automatique des totaux
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('item-article') || 
-            e.target.classList.contains('item-quantity') || 
-            e.target.classList.contains('item-price')) {
-            calculateTotal();
-        }
-    });
-
-    // Configurer les événements pour la première ligne d'articles
-    const firstRow = document.querySelector('.item-row');
-    if (firstRow) {
-        setupItemEventListeners(firstRow);
-    }
-}
-
-// Solution alternative : stockage local temporaire des images
 function uploadLogoLocal() {
     const fileInput = document.getElementById('logoUpload');
     const file = fileInput.files[0];
@@ -1767,7 +2170,6 @@ function uploadLogoLocal() {
         return;
     }
 
-    // Vérifier le type de fichier
     if (!file.type.startsWith('image/')) {
         showNotification('Veuillez sélectionner un fichier image', 'error');
         return;
@@ -1779,9 +2181,8 @@ function uploadLogoLocal() {
             const base64Data = e.target.result;
             companySettings.logoUrl = base64Data;
             
-            // Sauvegarder dans Firestore (seulement les autres données)
             const settingsToSave = { ...companySettings };
-            delete settingsToSave.logoUrl; // Ne pas sauvegarder le base64 dans Firestore
+            delete settingsToSave.logoUrl;
             
             db.collection('settings').doc('company').set(settingsToSave, { merge: true });
             
@@ -1806,7 +2207,6 @@ function uploadCachetLocal() {
         return;
     }
 
-    // Vérifier le type de fichier
     if (!file.type.startsWith('image/')) {
         showNotification('Veuillez sélectionner un fichier image', 'error');
         return;
@@ -1818,9 +2218,8 @@ function uploadCachetLocal() {
             const base64Data = e.target.result;
             companySettings.cachetUrl = base64Data;
             
-            // Sauvegarder dans Firestore (seulement les autres données)
             const settingsToSave = { ...companySettings };
-            delete settingsToSave.cachetUrl; // Ne pas sauvegarder le base64 dans Firestore
+            delete settingsToSave.cachetUrl;
             
             db.collection('settings').doc('company').set(settingsToSave, { merge: true });
             
@@ -1835,62 +2234,106 @@ function uploadCachetLocal() {
     reader.readAsDataURL(file);
 }
 
-// Détection automatique et gestion intelligente des uploads
-async function smartUploadLogo() {
-    try {
-        // Essayer d'abord Firebase Storage
-        await uploadLogo();
-    } catch (error) {
-        console.log('Firebase Storage non disponible, utilisation du stockage local');
-        uploadLogoLocal();
-    }
-}
-
-async function smartUploadCachet() {
-    try {
-        // Essayer d'abord Firebase Storage
-        await uploadCachet();
-    } catch (error) {
-        console.log('Firebase Storage non disponible, utilisation du stockage local');
-        uploadCachetLocal();
-    }
-}
-
-// Test de connectivité Firebase Storage
+// Firebase Storage connectivity test
 async function testFirebaseStorage() {
     try {
-        const testRef = storage.ref('test/connectivity.txt');
-        await testRef.putString('test', 'raw');
-        await testRef.delete(); // Nettoyer le test
+        const testRef = storage.ref('test/connectivity_test.txt');
+        const testData = `Test ${Date.now()}`;
+        
+        await testRef.putString(testData, 'raw');
+        const downloadURL = await testRef.getDownloadURL();
+        await testRef.delete();
+        
+        console.log('✅ Firebase Storage accessible');
         return true;
+        
     } catch (error) {
-        console.warn('Firebase Storage non accessible:', error.message);
+        console.error('❌ Firebase Storage test échoué:', error.code, error.message);
         return false;
     }
 }
 
-// Création d'un paiement à partir d'un achat
-async function createPaiementFromAchat(achatData) {
-    const paiementData = {
-        type: 'sortie',
-        reference: `ACH-${Date.now()}`,
-        description: `Achat - ${achatData.article.designation}`,
-        fournisseur: achatData.fournisseur,
-        montant: achatData.total,
-        modePaiement: achatData.modePaiement,
-        date: achatData.date,
-        statut: 'valide',
-        createdAt: new Date()
-    };
+// App initialization with connectivity test
+async function initializeApp() {
+    if (!firebase.apps.length) {
+        showNotification('Configuration Firebase manquante', 'error');
+        return;
+    }
 
     try {
-        const docRef = await db.collection('paiements').add(paiementData);
-        paiements.push({ id: docRef.id, ...paiementData });
-        displayPaiements();
+        await db.collection('test').doc('connectivity').set({ test: true });
+        await db.collection('test').doc('connectivity').delete();
+        console.log('✅ Firestore accessible');
     } catch (error) {
-        console.error('Erreur création paiement achat:', error);
+        console.error('❌ Firestore inaccessible:', error);
+        showNotification('Problème de connexion Firestore', 'error');
+    }
+
+    try {
+        const storageAvailable = await testFirebaseStorage();
+        if (!storageAvailable) {
+            showNotification('Mode local activé pour les images', 'info');
+        }
+    } catch (error) {
+        console.error('❌ Erreur test Firebase Storage:', error);
+        showNotification('Mode local activé pour les images', 'info');
+    }
+    
+    // Setup document item event listeners
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('item-article') || 
+            e.target.classList.contains('item-quantity') || 
+            e.target.classList.contains('item-price')) {
+            calculateTotal();
+        }
+    });
+
+    const firstRow = document.querySelector('.item-row');
+    if (firstRow) {
+        setupItemEventListeners(firstRow);
     }
 }
 
-// Initialisation finale
-console.log('Application de Gestion Commerciale - DYNAMIQUE FROID SYSTEMES initialisée');
+// Add diagnostic function to window for manual testing
+window.diagnoseNav = diagnoseNavigationIssues;
+
+// Manual test function to force show section
+window.testShowSection = function(sectionName) {
+    console.log(`🧪 TESTING: Attempting to show section "${sectionName}"`);
+    
+    // Force remove all active classes
+    document.querySelectorAll('.section').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none'; // Force hide
+    });
+    
+    // Force show target section
+    const target = document.getElementById(sectionName);
+    if (target) {
+        target.classList.add('active');
+        target.style.display = 'block'; // Force show
+        console.log(`✅ Forced section "${sectionName}" to display`);
+        
+        // Check final state
+        setTimeout(() => {
+            const finalDisplay = window.getComputedStyle(target).display;
+            console.log(`📐 Final display state: ${finalDisplay}`);
+        }, 100);
+    } else {
+        console.error(`❌ Section "${sectionName}" not found`);
+    }
+};
+
+// Quick test all sections function
+window.testAllSections = function() {
+    const sectionNames = ['dashboard', 'clients', 'articles', 'documents', 'ventes', 'achats', 'paiements', 'settings'];
+    sectionNames.forEach((name, index) => {
+        setTimeout(() => {
+            console.log(`🧪 Testing section ${index + 1}/${sectionNames.length}: ${name}`);
+            window.testShowSection(name);
+        }, index * 1000);
+    });
+};
+
+// Final initialization message
+console.log('Application de Gestion Commerciale - DYNAMIQUE FROID SYSTEMES initialisée avec optimisations de performance');

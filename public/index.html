@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -187,6 +186,9 @@
         <section id="ventes" class="section">
             <div class="section-header">
                 <h1>Gestion des Ventes</h1>
+                <button class="btn btn-primary" onclick="showVenteModal()">
+                    <i class="fas fa-plus"></i> Nouvelle Vente
+                </button>
             </div>
             <div class="table-container">
                 <div class="table-wrapper">
@@ -195,7 +197,7 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Client</th>
-                                <th>Montant</th>
+                                <th>Total</th>
                                 <th>Mode Paiement</th>
                                 <th>Statut</th>
                                 <th>Actions</th>
@@ -375,7 +377,7 @@ service firebase.storage {
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Nouveau Client</h2>
-                <span class="close" onclick="closeModal('clientModal')">&times;</span>
+                <span class="close" onclick="closeModal('clientModal')">×</span>
             </div>
             <form id="clientForm">
                 <div class="form-group">
@@ -407,7 +409,7 @@ service firebase.storage {
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Nouvel Article</h2>
-                <span class="close" onclick="closeModal('articleModal')">&times;</span>
+                <span class="close" onclick="closeModal('articleModal')">×</span>
             </div>
             <form id="articleForm">
                 <div class="form-group">
@@ -439,7 +441,7 @@ service firebase.storage {
         <div class="modal-content large">
             <div class="modal-header">
                 <h2 id="documentModalTitle">Nouveau Document</h2>
-                <span class="close" onclick="closeModal('documentModal')">&times;</span>
+                <span class="close" onclick="closeModal('documentModal')">×</span>
             </div>
             <form id="documentForm">
                 <div class="form-row">
@@ -490,7 +492,7 @@ service firebase.storage {
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Nouvel Achat</h2>
-                <span class="close" onclick="closeModal('achatModal')">&times;</span>
+                <span class="close" onclick="closeModal('achatModal')">×</span>
             </div>
             <form id="achatForm">
                 <div class="form-row">
@@ -548,12 +550,81 @@ service firebase.storage {
         </div>
     </div>
 
+    <!-- Vente Modal -->
+    <div id="venteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nouvelle Vente</h2>
+                <span class="close" onclick="closeModal('venteModal')">×</span>
+            </div>
+            <form id="venteForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Client</label>
+                        <select id="venteClient" required>
+                            <option value="">Sélectionner un client</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="venteDate" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Article</label>
+                        <select id="venteArticle" required>
+                            <option value="">Sélectionner un article</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantité</label>
+                        <input type="number" id="venteQuantity" min="1" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prix de vente unitaire HT (MAD)</label>
+                        <input type="number" id="ventePrixUnitaire" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Montant total calculé</label>
+                        <div id="venteTotalDisplay" class="total-display">
+                            <div>Sous-total HT: 0.00 MAD</div>
+                            <div>TVA (20%): 0.00 MAD</div>
+                            <div style="font-weight: bold; color: #2d3748;">Total TTC: 0.00 MAD</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Mode de paiement</label>
+                    <select id="venteModePaiement" required>
+                        <option value="">Sélectionner un mode</option>
+                        <option value="especes">Espèces</option>
+                        <option value="cheque">Chèque</option>
+                        <option value="virement">Virement</option>
+                        <option value="carte">Carte bancaire</option>
+                        <option value="credit">À crédit</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Enregistrer la vente</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('venteModal')">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Preview Modal -->
     <div id="previewModal" class="modal">
         <div class="modal-content large">
             <div class="modal-header">
                 <h2>Aperçu du Document</h2>
-                <span class="close" onclick="closeModal('previewModal')">&times;</span>
+                <span class="close" onclick="closeModal('previewModal')">×</span>
             </div>
             <div id="previewContent"></div>
             <div class="modal-footer">
