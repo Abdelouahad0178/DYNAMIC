@@ -1,0 +1,573 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Gestion Commerciale - DYNAMIQUE FROID SYSTEMES</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img id="companyLogo" src="" alt="Logo" style="display: none; height: 40px;">
+                <h2>DYNAMIQUE FROID SYSTEMES</h2>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn active" data-section="dashboard">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </button>
+                <button class="nav-btn" data-section="clients">
+                    <i class="fas fa-users"></i> Clients
+                </button>
+                <button class="nav-btn" data-section="articles">
+                    <i class="fas fa-box"></i> Articles
+                </button>
+                <button class="nav-btn" data-section="documents">
+                    <i class="fas fa-file-invoice"></i> Documents
+                </button>
+                <button class="nav-btn" data-section="ventes">
+                    <i class="fas fa-shopping-cart"></i> Ventes
+                </button>
+                <button class="nav-btn" data-section="achats">
+                    <i class="fas fa-shopping-bag"></i> Achats
+                </button>
+                <button class="nav-btn" data-section="paiements">
+                    <i class="fas fa-credit-card"></i> Paiements
+                </button>
+                <button class="nav-btn" data-section="settings">
+                    <i class="fas fa-cog"></i> Paramètres
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <div class="section-header">
+                <h1>Dashboard</h1>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalClients">0</h3>
+                        <p>Clients</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-invoice"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalFactures">0</h3>
+                        <p>Factures</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalVentes">0 MAD</h3>
+                        <p>Chiffre d'affaires</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalArticles">0</h3>
+                        <p>Articles</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Clients Section -->
+        <section id="clients" class="section">
+            <div class="section-header">
+                <h1>Gestion des Clients</h1>
+                <button class="btn btn-primary" onclick="showClientModal()">
+                    <i class="fas fa-plus"></i> Nouveau Client
+                </button>
+            </div>
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table id="clientsTable">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Email</th>
+                                <th>Téléphone</th>
+                                <th>Adresse</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Articles Section -->
+        <section id="articles" class="section">
+            <div class="section-header">
+                <h1>Gestion des Articles</h1>
+                <button class="btn btn-primary" onclick="showArticleModal()">
+                    <i class="fas fa-plus"></i> Nouvel Article
+                </button>
+            </div>
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table id="articlesTable">
+                        <thead>
+                            <tr>
+                                <th>Référence</th>
+                                <th>Désignation</th>
+                                <th>Prix Unitaire</th>
+                                <th>Stock</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Documents Section -->
+        <section id="documents" class="section">
+            <div class="section-header">
+                <h1>Documents Commerciaux</h1>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="showDocumentModal('devis')">
+                        <i class="fas fa-file-alt"></i> Nouveau Devis
+                    </button>
+                    <button class="btn btn-success" onclick="showDocumentModal('facture')">
+                        <i class="fas fa-file-invoice"></i> Nouvelle Facture
+                    </button>
+                    <button class="btn btn-info" onclick="showDocumentModal('proforma')">
+                        <i class="fas fa-file-invoice-dollar"></i> Facture Proforma
+                    </button>
+                </div>
+            </div>
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table id="documentsTable">
+                        <thead>
+                            <tr>
+                                <th>N°</th>
+                                <th>Type</th>
+                                <th>Client</th>
+                                <th>Date</th>
+                                <th>Montant</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Ventes Section -->
+        <section id="ventes" class="section">
+            <div class="section-header">
+                <h1>Gestion des Ventes</h1>
+            </div>
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table id="ventesTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th>Montant</th>
+                                <th>Mode Paiement</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Achats Section -->
+        <section id="achats" class="section">
+            <div class="section-header">
+                <h1>Gestion des Achats</h1>
+                <button class="btn btn-primary" onclick="showAchatModal()">
+                    <i class="fas fa-plus"></i> Nouvel Achat
+                </button>
+            </div>
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table id="achatsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Fournisseur</th>
+                                <th>Article</th>
+                                <th>Quantité</th>
+                                <th>Montant TTC</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Paiements Section -->
+        <section id="paiements" class="section">
+            <div class="section-header">
+                <h1>Gestion des Paiements</h1>
+            </div>
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table id="paiementsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Client/Fournisseur</th>
+                                <th>Montant</th>
+                                <th>Mode</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="section">
+            <div class="section-header">
+                <h1>Paramètres</h1>
+            </div>
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h3>Logo de l'entreprise</h3>
+                    <input type="file" id="logoUpload" accept="image/*">
+                    <button class="btn btn-primary" onclick="smartUploadLogo()">Télécharger Logo</button>
+                    <small style="display: block; margin-top: 0.5rem; color: #666;">
+                        Formats acceptés: PNG, JPG, GIF (max 5MB)
+                    </small>
+                </div>
+                <div class="settings-card">
+                    <h3>Cachet de l'entreprise</h3>
+                    <input type="file" id="cachetUpload" accept="image/*">
+                    <button class="btn btn-primary" onclick="smartUploadCachet()">Télécharger Cachet</button>
+                    <small style="display: block; margin-top: 0.5rem; color: #666;">
+                        Formats acceptés: PNG, JPG, GIF (max 5MB)
+                    </small>
+                </div>
+                <div class="settings-card">
+                    <h3>Informations de l'entreprise</h3>
+                    <form id="companyForm">
+                        <input type="text" id="companyName" value="DYNAMIQUE FROID SYSTEMES" placeholder="Nom de l'entreprise">
+                        <textarea id="companyAddress" placeholder="Adresse">10 RUE CHRARDA RDC DERB LOUBILA BOURGONE CENTRE D'AFFAIRE SOCOJUFI CASABLANCA MAROC</textarea>
+                        <input type="text" id="companyPhone" placeholder="Téléphone">
+                        <input type="email" id="companyEmail" placeholder="Email">
+                        <button type="submit" class="btn btn-primary">Sauvegarder</button>
+                    </form>
+                </div>
+                <div class="settings-card">
+                    <h3>📱 Interface Responsive</h3>
+                    <div style="background: #e6fffa; padding: 1rem; border-radius: 8px; border-left: 4px solid #38b2ac;">
+                        <h4 style="color: #234e52; margin-bottom: 0.5rem;">✨ Nouvelles fonctionnalités</h4>
+                        <ul style="margin: 0; padding-left: 1.5rem; line-height: 1.8; color: #2c7a7b;">
+                            <li><strong>Navigation tactile :</strong> Faites défiler les menus horizontalement</li>
+                            <li><strong>Tables scrollables :</strong> Défilement horizontal pour voir toutes les colonnes</li>
+                            <li><strong>Responsive design :</strong> Optimisé pour mobile, tablette et desktop</li>
+                            <li><strong>Mode sombre :</strong> S'adapte automatiquement à vos préférences système</li>
+                            <li><strong>Touch-friendly :</strong> Boutons et interactions optimisés pour le tactile</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; margin-top: 1rem; text-align: center; font-size: 0.8rem;">
+                        <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px;">
+                            <div style="font-size: 1.5rem;">📱</div>
+                            <div>Mobile</div>
+                        </div>
+                        <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px;">
+                            <div style="font-size: 1.5rem;">📊</div>
+                            <div>Tablette</div>
+                        </div>
+                        <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px;">
+                            <div style="font-size: 1.5rem;">🖥️</div>
+                            <div>Desktop</div>
+                        </div>
+                        <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px;">
+                            <div style="font-size: 1.5rem;">🌙</div>
+                            <div>Mode sombre</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-card">
+                    <h3>Configuration Firebase Storage</h3>
+                    <div style="background: #fff5f5; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #e53e3e;">
+                        <h4 style="color: #e53e3e; margin-bottom: 0.5rem;">🚫 Erreur 403 - Accès refusé</h4>
+                        <p style="margin: 0;"><strong>Problème :</strong> Les règles Firebase Storage bloquent l'upload des images.</p>
+                    </div>
+                    <div style="background: #f0fff4; padding: 1rem; border-radius: 8px; border-left: 4px solid #38a169;">
+                        <h4 style="color: #276749; margin-bottom: 0.5rem;">✅ Solution rapide (2 minutes)</h4>
+                        <ol style="margin: 0; padding-left: 1.5rem; line-height: 1.8;">
+                            <li>Ouvrez <a href="https://console.firebase.google.com" target="_blank" style="color: #3182ce; text-decoration: underline;">Firebase Console</a></li>
+                            <li>Sélectionnez votre projet <strong>"dynamicfr"</strong></li>
+                            <li>Allez dans <strong>Storage → Rules</strong></li>
+                            <li>Remplacez tout le contenu par :
+                                <pre style="background: #1a202c; color: #e2e8f0; padding: 0.8rem; border-radius: 6px; margin: 0.8rem 0; font-size: 0.85rem; overflow-x: auto;">rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}</pre>
+                            </li>
+                            <li>Cliquez sur <strong>"Publish"</strong> (Publier)</li>
+                            <li>Attendez 30 secondes puis testez ci-dessous</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <button class="btn btn-info" onclick="testFirebaseStorage().then(result => showNotification(result ? '🎉 Firebase Storage fonctionne parfaitement !' : '❌ Règles pas encore appliquées - Réessayez dans 30 secondes', result ? 'success' : 'error'))">
+                            🔍 Tester Firebase Storage
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.open('https://console.firebase.google.com/project/dynamicfr/storage/rules', '_blank')">
+                            🔧 Ouvrir Firebase Console
+                        </button>
+                    </div>
+                    
+                    <div style="background: #edf2f7; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                        <p style="margin: 0; font-size: 0.9rem; color: #4a5568;">
+                            💡 <strong>Note :</strong> En attendant, l'application fonctionne en mode local. 
+                            Vos images seront temporairement stockées dans le navigateur.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Client Modal -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nouveau Client</h2>
+                <span class="close" onclick="closeModal('clientModal')">&times;</span>
+            </div>
+            <form id="clientForm">
+                <div class="form-group">
+                    <label>Nom du client</label>
+                    <input type="text" id="clientName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="clientEmail">
+                </div>
+                <div class="form-group">
+                    <label>Téléphone</label>
+                    <input type="tel" id="clientPhone">
+                </div>
+                <div class="form-group">
+                    <label>Adresse</label>
+                    <textarea id="clientAddress"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('clientModal')">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Article Modal -->
+    <div id="articleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nouvel Article</h2>
+                <span class="close" onclick="closeModal('articleModal')">&times;</span>
+            </div>
+            <form id="articleForm">
+                <div class="form-group">
+                    <label>Référence</label>
+                    <input type="text" id="articleRef" required>
+                </div>
+                <div class="form-group">
+                    <label>Désignation</label>
+                    <input type="text" id="articleDesignation" required>
+                </div>
+                <div class="form-group">
+                    <label>Prix Unitaire HT (MAD)</label>
+                    <input type="number" id="articlePrice" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Stock Initial</label>
+                    <input type="number" id="articleStock" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('articleModal')">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Document Modal -->
+    <div id="documentModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2 id="documentModalTitle">Nouveau Document</h2>
+                <span class="close" onclick="closeModal('documentModal')">&times;</span>
+            </div>
+            <form id="documentForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Client</label>
+                        <select id="documentClient" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="documentDate" required>
+                    </div>
+                </div>
+                
+                <div class="document-items">
+                    <h3>Articles</h3>
+                    <div id="itemsList">
+                        <div class="item-row">
+                            <select class="item-article" required></select>
+                            <input type="number" class="item-quantity" placeholder="Qté" min="1" required>
+                            <input type="number" class="item-price" placeholder="Prix HT" step="0.01" required>
+                            <button type="button" class="btn btn-danger btn-small" onclick="removeItem(this)">Supprimer</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addItem()">Ajouter Article</button>
+                </div>
+
+                <div class="document-total">
+                    <div id="documentTotal" style="text-align: right; font-size: 1.1rem;">
+                        <div>Sous-total HT: 0.00 MAD</div>
+                        <div>TVA (20%): 0.00 MAD</div>
+                        <div style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 0.5rem;">
+                            Total TTC: 0.00 MAD
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" class="btn btn-info" onclick="previewDocument()">Aperçu</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('documentModal')">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Achat Modal -->
+    <div id="achatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nouvel Achat</h2>
+                <span class="close" onclick="closeModal('achatModal')">&times;</span>
+            </div>
+            <form id="achatForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fournisseur</label>
+                        <input type="text" id="achatFournisseur" required placeholder="Nom du fournisseur">
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="achatDate" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Article</label>
+                        <select id="achatArticle" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantité</label>
+                        <input type="number" id="achatQuantity" min="1" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prix d'achat unitaire HT (MAD)</label>
+                        <input type="number" id="achatPrixUnitaire" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Montant total calculé</label>
+                        <div id="achatTotalDisplay" style="padding: 0.8rem; background: #f7fafc; border-radius: 8px; font-weight: bold;">
+                            0.00 MAD TTC
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Mode de paiement</label>
+                    <select id="achatModePaiement" required>
+                        <option value="">Sélectionner un mode</option>
+                        <option value="especes">Espèces</option>
+                        <option value="cheque">Chèque</option>
+                        <option value="virement">Virement</option>
+                        <option value="carte">Carte bancaire</option>
+                        <option value="credit">À crédit</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Enregistrer l'achat</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('achatModal')">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>Aperçu du Document</h2>
+                <span class="close" onclick="closeModal('previewModal')">&times;</span>
+            </div>
+            <div id="previewContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="printDocument()">Imprimer</button>
+                <button class="btn btn-secondary" onclick="closeModal('previewModal')">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Configuration -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-storage-compat.min.js"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>
