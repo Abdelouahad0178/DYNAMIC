@@ -94,7 +94,7 @@ body {
     background: transparent;
     border: 2px solid transparent;
     color: white;
-    padding: 0.7rem 1.2rem;
+   
     border-radius: var(--border-radius-sm);
     cursor: pointer;
     transition: all 0.3s ease;
@@ -819,6 +819,8 @@ pre {
 .mobile-optimized * {
     -webkit-tap-highlight-color: transparent;
 }
+
+
 
 /* Media queries pour responsive design */
 @media (max-width: 1024px) {

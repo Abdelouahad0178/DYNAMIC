@@ -101,6 +101,10 @@ function diagnoseNavigationIssues() {
 // Initialize app on page load
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM Content Loaded - Initializing app');
+    
+    // Expose all functions globally first
+    exposeGlobalFunctions();
+    
     initializeApp();
     setupEventListeners();
     loadData();
@@ -116,7 +120,7 @@ function setupEventListeners() {
     try {
         // Navigation buttons - Fix pour les clics sur les icônes
         const navButtons = document.querySelectorAll('.nav-btn');
-        console.log('Found navigation buttons:', navButtons.length); // Debug log
+        console.log('Found navigation buttons:', navButtons.length);
         
         if (navButtons.length === 0) {
             console.warn('Aucun bouton de navigation (.nav-btn) trouvé dans le DOM');
@@ -124,30 +128,28 @@ function setupEventListeners() {
         
         navButtons.forEach((btn, index) => {
             const section = btn.dataset.section;
-            console.log(`Button ${index}: section="${section}"`); // Debug log
+            console.log(`Button ${index}: section="${section}"`);
             
             // Fonction de gestion universelle
             function handleNavigation(e) {
-                console.log('Navigation event triggered:', e.type, 'on button:', btn); // Debug log
-                e.preventDefault(); // Empêcher tout comportement par défaut
-                e.stopPropagation(); // Empêcher la propagation
+                console.log('Navigation event triggered:', e.type, 'on button:', btn);
+                e.preventDefault();
+                e.stopPropagation();
                 
-                // Utiliser currentTarget pour toujours pointer vers le bouton
-                // ou remonter jusqu'au bouton si on clique sur l'icône
                 let targetButton = e.currentTarget;
-                console.log('currentTarget:', targetButton); // Debug log
-                console.log('target:', e.target); // Debug log
+                console.log('currentTarget:', targetButton);
+                console.log('target:', e.target);
                 
                 if (!targetButton.dataset.section) {
                     targetButton = e.target.closest('.nav-btn');
-                    console.log('Found closest nav-btn:', targetButton); // Debug log
+                    console.log('Found closest nav-btn:', targetButton);
                 }
                 
                 const section = targetButton?.dataset.section;
-                console.log('Navigation detected, section:', section); // Debug log
+                console.log('Navigation detected, section:', section);
                 
                 if (section) {
-                    console.log('Calling showSection with:', section); // Debug log
+                    console.log('Calling showSection with:', section);
                     showSection(section);
                 } else {
                     console.warn('Section non définie pour le bouton de navigation', targetButton);
@@ -189,7 +191,6 @@ function setupEventListeners() {
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 e.target.style.display = 'none';
-                // Réinitialiser les formulaires dans le modal
                 const forms = e.target.querySelectorAll('form');
                 forms.forEach(form => form.reset());
             }
@@ -223,7 +224,7 @@ function initializeDocumentDate() {
 
 // Enhanced navigation with screen detection and debugging
 function showSection(sectionName) {
-    console.log('🔄 showSection called with:', sectionName); // Debug log
+    console.log('🔄 showSection called with:', sectionName);
     
     // Vérifier que la section existe
     const targetSection = document.getElementById(sectionName);
@@ -233,11 +234,11 @@ function showSection(sectionName) {
         return;
     }
     
-    console.log('✅ Target section found:', targetSection); // Debug log
+    console.log('✅ Target section found:', targetSection);
     
     // Hide all sections
     const allSections = document.querySelectorAll('.section');
-    console.log('📄 Hiding all sections, found:', allSections.length); // Debug log
+    console.log('📄 Hiding all sections, found:', allSections.length);
     
     allSections.forEach((section, index) => {
         console.log(`   Section ${index}: ${section.id} - removing active`);
@@ -246,7 +247,7 @@ function showSection(sectionName) {
     
     // Remove active from all nav buttons
     const allNavButtons = document.querySelectorAll('.nav-btn');
-    console.log('🔘 Deactivating all nav buttons, found:', allNavButtons.length); // Debug log
+    console.log('🔘 Deactivating all nav buttons, found:', allNavButtons.length);
     
     allNavButtons.forEach((btn, index) => {
         console.log(`   Button ${index}: ${btn.dataset.section} - removing active`);
@@ -506,7 +507,7 @@ function updateScrollIndicators(wrapper) {
     container.classList.toggle('scroll-end', scrollLeft >= scrollWidth - clientWidth - 1);
 }
 
-// Optimized touch support with minimal event listeners
+// Optimized touch support with universal button handling
 function setupOptimizedTouchSupport() {
     // Add viewport meta if not present
     let viewport = document.querySelector('meta[name=viewport]');
@@ -517,18 +518,58 @@ function setupOptimizedTouchSupport() {
         document.head.appendChild(viewport);
     }
 
-    // Use event delegation for button touch effects
+    // Universal button touch handler - Works for ALL buttons
+    document.body.addEventListener('touchend', (e) => {
+        console.log('🔍 Touch detected on:', e.target.tagName, e.target.className);
+        
+        // Find the button element (could be the target or a parent)
+        let button = e.target;
+        if (!button.classList.contains('btn') && !button.classList.contains('nav-btn')) {
+            button = e.target.closest('.btn, .nav-btn, button');
+        }
+        
+        if (button) {
+            console.log('✅ Button found:', button);
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Simulate click for buttons with onclick attributes
+            if (button.onclick) {
+                console.log('🔄 Executing onclick for:', button);
+                button.onclick.call(button, e);
+                return;
+            }
+            
+            // Handle navigation buttons
+            if (button.classList.contains('nav-btn') && button.dataset.section) {
+                console.log('🔄 Navigation button:', button.dataset.section);
+                showSection(button.dataset.section);
+                return;
+            }
+            
+            // Dispatch a click event for other buttons
+            console.log('🔄 Dispatching click event for:', button);
+            const clickEvent = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window
+            });
+            button.dispatchEvent(clickEvent);
+        }
+    }, { passive: false });
+
+    // Visual feedback for touch
     document.body.addEventListener('touchstart', (e) => {
-        if (e.target.classList.contains('btn') || e.target.closest('.btn')) {
-            const button = e.target.classList.contains('btn') ? e.target : e.target.closest('.btn');
+        const button = e.target.closest('.btn, .nav-btn, button');
+        if (button) {
             button.style.transform = 'scale(0.95)';
             button.style.transition = 'transform 0.1s ease';
         }
     }, { passive: true });
 
     document.body.addEventListener('touchend', (e) => {
-        if (e.target.classList.contains('btn') || e.target.closest('.btn')) {
-            const button = e.target.classList.contains('btn') ? e.target : e.target.closest('.btn');
+        const button = e.target.closest('.btn, .nav-btn, button');
+        if (button) {
             setTimeout(() => {
                 button.style.transform = '';
                 button.style.transition = '';
@@ -543,6 +584,90 @@ function setupOptimizedTouchSupport() {
             e.preventDefault();
         });
     });
+
+    // Add touch-friendly cursor styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .btn, .nav-btn, button {
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        .btn:active, .nav-btn:active, button:active {
+            transform: scale(0.95);
+        }
+        
+        @media (max-width: 768px) {
+            .btn, .nav-btn, button {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+        
+        /* Filter styles */
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            align-items: center;
+        }
+        
+        .filter-input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        
+        .filter-date {
+            flex: 0.5;
+            min-width: 150px;
+        }
+        
+        .filter-container .btn {
+            flex: 0;
+            white-space: nowrap;
+        }
+        
+        .btn-secondary {
+            background: #718096;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4a5568;
+        }
+        
+        @media (max-width: 768px) {
+            .filter-container {
+                flex-direction: column;
+            }
+            
+            .filter-input, .filter-date {
+                width: 100%;
+                min-width: unset;
+            }
+            
+            .filter-container .btn {
+                width: 100%;
+            }
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // Setup orientation and resize handling
@@ -793,6 +918,7 @@ async function loadData() {
             loadCompanySettings()
         ]);
         updateDashboard();
+        setupFilters(); // Setup filters after data is loaded
     } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
     }
@@ -913,28 +1039,7 @@ async function handleClientSubmit(e) {
 }
 
 function displayClients() {
-    const tbody = document.querySelector('#clientsTable tbody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    clients.forEach(client => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${client.name}</td>
-            <td>${client.email || '-'}</td>
-            <td>${client.phone || '-'}</td>
-            <td>${client.address || '-'}</td>
-            <td>
-                <button class="btn btn-info btn-small" onclick="editClient('${client.id}')">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-danger btn-small" onclick="deleteClient('${client.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-    });
+    displayFilteredClients(clients);
 }
 
 async function deleteClient(clientId) {
@@ -976,28 +1081,7 @@ async function handleArticleSubmit(e) {
 }
 
 function displayArticles() {
-    const tbody = document.querySelector('#articlesTable tbody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    articles.forEach(article => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${article.reference}</td>
-            <td>${article.designation}</td>
-            <td>${article.price.toFixed(2)} MAD</td>
-            <td>${article.stock}</td>
-            <td>
-                <button class="btn btn-info btn-small" onclick="editArticle('${article.id}')">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-danger btn-small" onclick="deleteArticle('${article.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-    });
+    displayFilteredArticles(articles);
 }
 
 async function deleteArticle(articleId) {
@@ -1197,38 +1281,7 @@ function generateDocumentNumber(type) {
 }
 
 function displayDocuments() {
-    const tbody = document.querySelector('#documentsTable tbody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    documents.forEach(doc => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${doc.number}</td>
-            <td>${doc.type.toUpperCase()}</td>
-            <td>${doc.client ? doc.client.name : 'N/A'}</td>
-            <td>${new Date(doc.date).toLocaleDateString('fr-FR')}</td>
-            <td>
-                <div style="font-size: 0.9em;">
-                    <div>HT: ${(doc.subtotal || doc.total / 1.2).toFixed(2)} MAD</div>
-                    <div><strong>TTC: ${doc.total.toFixed(2)} MAD</strong></div>
-                </div>
-            </td>
-            <td><span class="status-badge ${doc.status}">${doc.status}</span></td>
-            <td>
-                <button class="btn btn-info btn-small" onclick="previewDocument('${doc.id}')">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn btn-primary btn-small" onclick="printDocument('${doc.id}')">
-                    <i class="fas fa-print"></i>
-                </button>
-                <button class="btn btn-danger btn-small" onclick="deleteDocument('${doc.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-    });
+    displayFilteredDocuments(documents);
 }
 
 // Achat handling
@@ -1369,14 +1422,396 @@ async function handleVenteSubmit(e) {
     }
 }
 
-// Display functions
-function displayAchats() {
+// Filter functions
+function setupFilters() {
+    // Setup filters for each section
+    setupClientFilters();
+    setupArticleFilters();
+    setupDocumentFilters();
+    setupVenteFilters();
+    setupAchatFilters();
+    setupPaiementFilters();
+}
+
+function setupClientFilters() {
+    const container = document.querySelector('#clients .section-header');
+    if (!container) return;
+    
+    const filterDiv = document.createElement('div');
+    filterDiv.className = 'filter-container';
+    filterDiv.innerHTML = `
+        <input type="text" id="clientFilterName" placeholder="Filtrer par nom..." class="filter-input">
+    `;
+    container.appendChild(filterDiv);
+    
+    document.getElementById('clientFilterName').addEventListener('input', filterClients);
+}
+
+function setupArticleFilters() {
+    const container = document.querySelector('#articles .section-header');
+    if (!container) return;
+    
+    const filterDiv = document.createElement('div');
+    filterDiv.className = 'filter-container';
+    filterDiv.innerHTML = `
+        <input type="text" id="articleFilterName" placeholder="Filtrer par référence ou désignation..." class="filter-input">
+    `;
+    container.appendChild(filterDiv);
+    
+    document.getElementById('articleFilterName').addEventListener('input', filterArticles);
+}
+
+function setupDocumentFilters() {
+    const container = document.querySelector('#documents .section-header');
+    if (!container) return;
+    
+    const filterDiv = document.createElement('div');
+    filterDiv.className = 'filter-container';
+    filterDiv.innerHTML = `
+        <input type="text" id="documentFilterName" placeholder="Filtrer par client..." class="filter-input">
+        <input type="date" id="documentFilterDateStart" class="filter-input filter-date">
+        <input type="date" id="documentFilterDateEnd" class="filter-input filter-date">
+        <button onclick="filterDocuments()" class="btn btn-primary btn-small">Filtrer</button>
+        <button onclick="resetDocumentFilters()" class="btn btn-secondary btn-small">Réinitialiser</button>
+    `;
+    container.appendChild(filterDiv);
+    
+    document.getElementById('documentFilterName').addEventListener('input', filterDocuments);
+}
+
+function setupVenteFilters() {
+    const container = document.querySelector('#ventes .section-header');
+    if (!container) return;
+    
+    const filterDiv = document.createElement('div');
+    filterDiv.className = 'filter-container';
+    filterDiv.innerHTML = `
+        <input type="text" id="venteFilterName" placeholder="Filtrer par client..." class="filter-input">
+        <input type="date" id="venteFilterDateStart" class="filter-input filter-date">
+        <input type="date" id="venteFilterDateEnd" class="filter-input filter-date">
+        <button onclick="filterVentes()" class="btn btn-primary btn-small">Filtrer</button>
+        <button onclick="resetVenteFilters()" class="btn btn-secondary btn-small">Réinitialiser</button>
+    `;
+    container.appendChild(filterDiv);
+    
+    document.getElementById('venteFilterName').addEventListener('input', filterVentes);
+}
+
+function setupAchatFilters() {
+    const container = document.querySelector('#achats .section-header');
+    if (!container) return;
+    
+    const filterDiv = document.createElement('div');
+    filterDiv.className = 'filter-container';
+    filterDiv.innerHTML = `
+        <input type="text" id="achatFilterName" placeholder="Filtrer par fournisseur..." class="filter-input">
+        <input type="date" id="achatFilterDateStart" class="filter-input filter-date">
+        <input type="date" id="achatFilterDateEnd" class="filter-input filter-date">
+        <button onclick="filterAchats()" class="btn btn-primary btn-small">Filtrer</button>
+        <button onclick="resetAchatFilters()" class="btn btn-secondary btn-small">Réinitialiser</button>
+    `;
+    container.appendChild(filterDiv);
+    
+    document.getElementById('achatFilterName').addEventListener('input', filterAchats);
+}
+
+function setupPaiementFilters() {
+    const container = document.querySelector('#paiements .section-header');
+    if (!container) return;
+    
+    const filterDiv = document.createElement('div');
+    filterDiv.className = 'filter-container';
+    filterDiv.innerHTML = `
+        <input type="text" id="paiementFilterName" placeholder="Filtrer par nom..." class="filter-input">
+        <input type="date" id="paiementFilterDateStart" class="filter-input filter-date">
+        <input type="date" id="paiementFilterDateEnd" class="filter-input filter-date">
+        <button onclick="filterPaiements()" class="btn btn-primary btn-small">Filtrer</button>
+        <button onclick="resetPaiementFilters()" class="btn btn-secondary btn-small">Réinitialiser</button>
+    `;
+    container.appendChild(filterDiv);
+    
+    document.getElementById('paiementFilterName').addEventListener('input', filterPaiements);
+}
+
+// Filter implementation functions
+function filterClients() {
+    const filterValue = document.getElementById('clientFilterName').value.toLowerCase();
+    const filteredClients = clients.filter(client => 
+        client.name.toLowerCase().includes(filterValue) ||
+        (client.email && client.email.toLowerCase().includes(filterValue)) ||
+        (client.phone && client.phone.includes(filterValue))
+    );
+    displayFilteredClients(filteredClients);
+}
+
+function filterArticles() {
+    const filterValue = document.getElementById('articleFilterName').value.toLowerCase();
+    const filteredArticles = articles.filter(article => 
+        article.reference.toLowerCase().includes(filterValue) ||
+        article.designation.toLowerCase().includes(filterValue)
+    );
+    displayFilteredArticles(filteredArticles);
+}
+
+function filterDocuments() {
+    const nameFilter = document.getElementById('documentFilterName').value.toLowerCase();
+    const startDate = document.getElementById('documentFilterDateStart').value;
+    const endDate = document.getElementById('documentFilterDateEnd').value;
+    
+    let filteredDocuments = documents;
+    
+    if (nameFilter) {
+        filteredDocuments = filteredDocuments.filter(doc => 
+            doc.client && doc.client.name.toLowerCase().includes(nameFilter)
+        );
+    }
+    
+    if (startDate) {
+        filteredDocuments = filteredDocuments.filter(doc => 
+            new Date(doc.date) >= new Date(startDate)
+        );
+    }
+    
+    if (endDate) {
+        filteredDocuments = filteredDocuments.filter(doc => 
+            new Date(doc.date) <= new Date(endDate)
+        );
+    }
+    
+    displayFilteredDocuments(filteredDocuments);
+}
+
+function filterVentes() {
+    const nameFilter = document.getElementById('venteFilterName').value.toLowerCase();
+    const startDate = document.getElementById('venteFilterDateStart').value;
+    const endDate = document.getElementById('venteFilterDateEnd').value;
+    
+    let filteredVentes = ventes;
+    
+    if (nameFilter) {
+        filteredVentes = filteredVentes.filter(vente => 
+            vente.clientName.toLowerCase().includes(nameFilter)
+        );
+    }
+    
+    if (startDate) {
+        filteredVentes = filteredVentes.filter(vente => 
+            new Date(vente.date) >= new Date(startDate)
+        );
+    }
+    
+    if (endDate) {
+        filteredVentes = filteredVentes.filter(vente => 
+            new Date(vente.date) <= new Date(endDate)
+        );
+    }
+    
+    displayFilteredVentes(filteredVentes);
+}
+
+function filterAchats() {
+    const nameFilter = document.getElementById('achatFilterName').value.toLowerCase();
+    const startDate = document.getElementById('achatFilterDateStart').value;
+    const endDate = document.getElementById('achatFilterDateEnd').value;
+    
+    let filteredAchats = achats;
+    
+    if (nameFilter) {
+        filteredAchats = filteredAchats.filter(achat => 
+            achat.fournisseur.toLowerCase().includes(nameFilter) ||
+            achat.article.designation.toLowerCase().includes(nameFilter)
+        );
+    }
+    
+    if (startDate) {
+        filteredAchats = filteredAchats.filter(achat => 
+            new Date(achat.date) >= new Date(startDate)
+        );
+    }
+    
+    if (endDate) {
+        filteredAchats = filteredAchats.filter(achat => 
+            new Date(achat.date) <= new Date(endDate)
+        );
+    }
+    
+    displayFilteredAchats(filteredAchats);
+}
+
+function filterPaiements() {
+    const nameFilter = document.getElementById('paiementFilterName').value.toLowerCase();
+    const startDate = document.getElementById('paiementFilterDateStart').value;
+    const endDate = document.getElementById('paiementFilterDateEnd').value;
+    
+    let filteredPaiements = paiements;
+    
+    if (nameFilter) {
+        filteredPaiements = filteredPaiements.filter(paiement => {
+            const searchText = (paiement.fournisseur || paiement.clientName || paiement.description || '').toLowerCase();
+            return searchText.includes(nameFilter);
+        });
+    }
+    
+    if (startDate) {
+        filteredPaiements = filteredPaiements.filter(paiement => 
+            new Date(paiement.date) >= new Date(startDate)
+        );
+    }
+    
+    if (endDate) {
+        filteredPaiements = filteredPaiements.filter(paiement => 
+            new Date(paiement.date) <= new Date(endDate)
+        );
+    }
+    
+    displayFilteredPaiements(filteredPaiements);
+}
+
+// Reset filter functions
+function resetDocumentFilters() {
+    document.getElementById('documentFilterName').value = '';
+    document.getElementById('documentFilterDateStart').value = '';
+    document.getElementById('documentFilterDateEnd').value = '';
+    displayDocuments();
+}
+
+function resetVenteFilters() {
+    document.getElementById('venteFilterName').value = '';
+    document.getElementById('venteFilterDateStart').value = '';
+    document.getElementById('venteFilterDateEnd').value = '';
+    displayVentes();
+}
+
+function resetAchatFilters() {
+    document.getElementById('achatFilterName').value = '';
+    document.getElementById('achatFilterDateStart').value = '';
+    document.getElementById('achatFilterDateEnd').value = '';
+    displayAchats();
+}
+
+function resetPaiementFilters() {
+    document.getElementById('paiementFilterName').value = '';
+    document.getElementById('paiementFilterDateStart').value = '';
+    document.getElementById('paiementFilterDateEnd').value = '';
+    displayPaiements();
+}
+
+// Display filtered data functions
+function displayFilteredClients(filteredClients) {
+    const tbody = document.querySelector('#clientsTable tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    filteredClients.forEach(client => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${client.name}</td>
+            <td>${client.email || '-'}</td>
+            <td>${client.phone || '-'}</td>
+            <td>${client.address || '-'}</td>
+            <td>
+                <button class="btn btn-info btn-small" onclick="editClient('${client.id}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-danger btn-small" onclick="deleteClient('${client.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+    });
+}
+
+function displayFilteredArticles(filteredArticles) {
+    const tbody = document.querySelector('#articlesTable tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    filteredArticles.forEach(article => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${article.reference}</td>
+            <td>${article.designation}</td>
+            <td>${article.price.toFixed(2)} MAD</td>
+            <td>${article.stock}</td>
+            <td>
+                <button class="btn btn-info btn-small" onclick="editArticle('${article.id}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-danger btn-small" onclick="deleteArticle('${article.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+    });
+}
+
+function displayFilteredDocuments(filteredDocuments) {
+    const tbody = document.querySelector('#documentsTable tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    filteredDocuments.forEach(doc => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${doc.number}</td>
+            <td>${doc.type.toUpperCase()}</td>
+            <td>${doc.client ? doc.client.name : 'N/A'}</td>
+            <td>${new Date(doc.date).toLocaleDateString('fr-FR')}</td>
+            <td>
+                <div style="font-size: 0.9em;">
+                    <div>HT: ${(doc.subtotal || doc.total / 1.2).toFixed(2)} MAD</div>
+                    <div><strong>TTC: ${doc.total.toFixed(2)} MAD</strong></div>
+                </div>
+            </td>
+            <td><span class="status-badge ${doc.status}">${doc.status}</span></td>
+            <td>
+                <button class="btn btn-info btn-small" onclick="previewDocument('${doc.id}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-primary btn-small" onclick="printDocument('${doc.id}')">
+                    <i class="fas fa-print"></i>
+                </button>
+                <button class="btn btn-danger btn-small" onclick="deleteDocument('${doc.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+    });
+}
+
+function displayFilteredVentes(filteredVentes) {
+    const tbody = document.querySelector('#ventesTable tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    filteredVentes.forEach(vente => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${new Date(vente.date).toLocaleDateString('fr-FR')}</td>
+            <td>${vente.clientName}</td>
+            <td>${vente.total.toFixed(2)} MAD</td>
+            <td>${vente.modePaiement || 'Facture'}</td>
+            <td><span class="status-badge ${vente.statut}">${vente.statut}</span></td>
+            <td>
+                <button class="btn btn-info btn-small" onclick="viewVenteDetails('${vente.id}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+    });
+}
+
+function displayFilteredAchats(filteredAchats) {
     const tbody = document.querySelector('#achatsTable tbody');
     if (!tbody) return;
     
     tbody.innerHTML = '';
     
-    achats.forEach(achat => {
+    filteredAchats.forEach(achat => {
         const row = tbody.insertRow();
         row.innerHTML = `
             <td>${new Date(achat.date).toLocaleDateString('fr-FR')}</td>
@@ -1397,39 +1832,13 @@ function displayAchats() {
     });
 }
 
-function displayVentes() {
-    const tbody = document.querySelector('#ventesTable tbody');
-    if (!tbody) {
-        console.warn('Tableau des ventes (#ventesTable tbody) non trouvé dans le DOM');
-        return;
-    }
-
-    tbody.innerHTML = '';
-    
-    ventes.forEach(vente => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${new Date(vente.date).toLocaleDateString('fr-FR')}</td>
-            <td>${vente.clientName}</td>
-            <td>${vente.total.toFixed(2)} MAD</td>
-            <td>${vente.modePaiement || 'Facture'}</td>
-            <td><span class="status-badge ${vente.statut}">${vente.statut}</span></td>
-            <td>
-                <button class="btn btn-info btn-small" onclick="viewVenteDetails('${vente.id}')">
-                    <i class="fas fa-eye"></i>
-                </button>
-            </td>
-        `;
-    });
-}
-
-function displayPaiements() {
+function displayFilteredPaiements(filteredPaiements) {
     const tbody = document.querySelector('#paiementsTable tbody');
     if (!tbody) return;
     
     tbody.innerHTML = '';
     
-    paiements.forEach(paiement => {
+    filteredPaiements.forEach(paiement => {
         const row = tbody.insertRow();
         const typeLabel = paiement.type === 'entree' ? 'Entrée' : 'Sortie';
         const typeClass = paiement.type === 'entree' ? 'success' : 'danger';
@@ -1443,6 +1852,19 @@ function displayPaiements() {
             <td><span class="status-badge ${paiement.statut}">${paiement.statut}</span></td>
         `;
     });
+}
+
+// Display functions
+function displayAchats() {
+    displayFilteredAchats(achats);
+}
+
+function displayVentes() {
+    displayFilteredVentes(ventes);
+}
+
+function displayPaiements() {
+    displayFilteredPaiements(paiements);
 }
 
 // Company settings
@@ -1706,7 +2128,7 @@ async function deleteDocument(documentId) {
     }
 }
 
-// Document preview and printing functions [SUITE...]
+// Document preview and printing functions
 function previewDocument(documentId = null) {
     let doc;
     
@@ -2294,46 +2716,84 @@ async function initializeApp() {
     }
 }
 
-// Add diagnostic function to window for manual testing
-window.diagnoseNav = diagnoseNavigationIssues;
-
-// Manual test function to force show section
-window.testShowSection = function(sectionName) {
-    console.log(`🧪 TESTING: Attempting to show section "${sectionName}"`);
+// Expose all modal functions globally for HTML onclick compatibility
+function exposeGlobalFunctions() {
+    // Make sure all onclick functions are available globally
+    window.showClientModal = showClientModal;
+    window.showArticleModal = showArticleModal;
+    window.showDocumentModal = showDocumentModal;
+    window.showAchatModal = showAchatModal;
+    window.showVenteModal = showVenteModal;
+    window.closeModal = closeModal;
+    window.addItem = addItem;
+    window.removeItem = removeItem;
+    window.previewDocument = previewDocument;
+    window.printDocument = printDocument;
+    window.editClient = editClient;
+    window.editArticle = editArticle;
+    window.deleteClient = deleteClient;
+    window.deleteArticle = deleteArticle;
+    window.deleteAchat = deleteAchat;
+    window.deleteDocument = deleteDocument;
+    window.viewAchatDetails = viewAchatDetails;
+    window.viewVenteDetails = viewVenteDetails;
+    window.smartUploadLogo = smartUploadLogo;
+    window.smartUploadCachet = smartUploadCachet;
+    window.testFirebaseStorage = testFirebaseStorage;
+    window.showSection = showSection;
     
-    // Force remove all active classes
-    document.querySelectorAll('.section').forEach(s => {
-        s.classList.remove('active');
-        s.style.display = 'none'; // Force hide
-    });
+    // Filter functions
+    window.filterClients = filterClients;
+    window.filterArticles = filterArticles;
+    window.filterDocuments = filterDocuments;
+    window.filterVentes = filterVentes;
+    window.filterAchats = filterAchats;
+    window.filterPaiements = filterPaiements;
+    window.resetDocumentFilters = resetDocumentFilters;
+    window.resetVenteFilters = resetVenteFilters;
+    window.resetAchatFilters = resetAchatFilters;
+    window.resetPaiementFilters = resetPaiementFilters;
     
-    // Force show target section
-    const target = document.getElementById(sectionName);
-    if (target) {
-        target.classList.add('active');
-        target.style.display = 'block'; // Force show
-        console.log(`✅ Forced section "${sectionName}" to display`);
+    // Debug functions
+    window.diagnoseNav = diagnoseNavigationIssues;
+    window.testShowSection = function(sectionName) {
+        console.log(`🧪 TESTING: Attempting to show section "${sectionName}"`);
         
-        // Check final state
-        setTimeout(() => {
-            const finalDisplay = window.getComputedStyle(target).display;
-            console.log(`📐 Final display state: ${finalDisplay}`);
-        }, 100);
-    } else {
-        console.error(`❌ Section "${sectionName}" not found`);
-    }
-};
-
-// Quick test all sections function
-window.testAllSections = function() {
-    const sectionNames = ['dashboard', 'clients', 'articles', 'documents', 'ventes', 'achats', 'paiements', 'settings'];
-    sectionNames.forEach((name, index) => {
-        setTimeout(() => {
-            console.log(`🧪 Testing section ${index + 1}/${sectionNames.length}: ${name}`);
-            window.testShowSection(name);
-        }, index * 1000);
-    });
-};
+        // Force remove all active classes
+        document.querySelectorAll('.section').forEach(s => {
+            s.classList.remove('active');
+            s.style.display = 'none'; // Force hide
+        });
+        
+        // Force show target section
+        const target = document.getElementById(sectionName);
+        if (target) {
+            target.classList.add('active');
+            target.style.display = 'block'; // Force show
+            console.log(`✅ Forced section "${sectionName}" to display`);
+            
+            // Check final state
+            setTimeout(() => {
+                const finalDisplay = window.getComputedStyle(target).display;
+                console.log(`📐 Final display state: ${finalDisplay}`);
+            }, 100);
+        } else {
+            console.error(`❌ Section "${sectionName}" not found`);
+        }
+    };
+    
+    window.testAllSections = function() {
+        const sectionNames = ['dashboard', 'clients', 'articles', 'documents', 'ventes', 'achats', 'paiements', 'settings'];
+        sectionNames.forEach((name, index) => {
+            setTimeout(() => {
+                console.log(`🧪 Testing section ${index + 1}/${sectionNames.length}: ${name}`);
+                window.testShowSection(name);
+            }, index * 1000);
+        });
+    };
+    
+    console.log('✅ All modal functions exposed globally');
+}
 
 // Final initialization message
 console.log('Application de Gestion Commerciale - DYNAMIQUE FROID SYSTEMES initialisée avec optimisations de performance');
