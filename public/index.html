@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -9,6 +10,7 @@
     <title>Gestion Commerciale - DYNAMIQUE FROID SYSTEMES</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
     <!-- Navigation -->
@@ -18,8 +20,37 @@
                 <img id="companyLogo" src="" alt="Logo" style="display: none; height: 40px;">
                 <h2>DYNAMIQUE FROID SYSTEMES</h2>
             </div>
+            <button class="hamburger" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="nav-menu">
                 <button class="nav-btn active" data-section="dashboard">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </button>
+                <button class="nav-btn" data-section="clients">
+                    <i class="fas fa-users"></i> Clients
+                </button>
+                <button class="nav-btn" data-section="articles">
+                    <i class="fas fa-box"></i> Articles
+                </button>
+                <button class="nav-btn" data-section="documents">
+                    <i class="fas fa-file-invoice"></i> Documents
+                </button>
+                <button class="nav-btn" data-section="ventes">
+                    <i class="fas fa-shopping-cart"></i> Ventes
+                </button>
+                <button class="nav-btn" data-section="achats">
+                    <i class="fas fa-shopping-bag"></i> Achats
+                </button>
+                <button class="nav-btn" data-section="paiements">
+                    <i class="fas fa-credit-card"></i> Paiements
+                </button>
+                <button class="nav-btn" data-section="settings">
+                    <i class="fas fa-cog"></i> Paramètres
+                </button>
+            </div>
+            <div class="nav-mobile" id="navMobile">
+                <button class="nav-btn" data-section="dashboard">
                     <i class="fas fa-chart-line"></i> Dashboard
                 </button>
                 <button class="nav-btn" data-section="clients">
@@ -294,78 +325,16 @@
                     </form>
                 </div>
                 <div class="settings-card">
-                    <h3>📱 Interface Responsive</h3>
+                    <h3>🚀 Application Optimisée</h3>
                     <div style="background: #e6fffa; padding: 1rem; border-radius: 8px; border-left: 4px solid #38b2ac;">
-                        <h4 style="color: #234e52; margin-bottom: 0.5rem;">✨ Nouvelles fonctionnalités</h4>
+                        <h4 style="color: #234e52; margin-bottom: 0.5rem;">✨ Fonctionnalités</h4>
                         <ul style="margin: 0; padding-left: 1.5rem; line-height: 1.8; color: #2c7a7b;">
-                            <li><strong>Navigation tactile :</strong> Faites défiler les menus horizontalement</li>
-                            <li><strong>Tables scrollables :</strong> Défilement horizontal pour voir toutes les colonnes</li>
-                            <li><strong>Responsive design :</strong> Optimisé pour mobile, tablette et desktop</li>
-                            <li><strong>Mode sombre :</strong> S'adapte automatiquement à vos préférences système</li>
-                            <li><strong>Touch-friendly :</strong> Boutons et interactions optimisés pour le tactile</li>
+                            <li><strong>Navigation fluide :</strong> Sections optimisées</li>
+                            <li><strong>Responsive design :</strong> Mobile, tablette, desktop</li>
+                            <li><strong>Firebase intégré :</strong> Base de données temps réel</li>
+                            <li><strong>Gestion complète :</strong> Clients, articles, documents</li>
+                            <li><strong>Interface moderne :</strong> CSS optimisé</li>
                         </ul>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; margin-top: 1rem; text-align: center; font-size: 0.8rem;">
-                        <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px;">
-                            <div style="font-size: 1.5rem;">📱</div>
-                            <div>Mobile</div>
-                        </div>
-                        <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px;">
-                            <div style="font-size: 1.5rem;">📊</div>
-                            <div>Tablette</div>
-                        </div>
-                        <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px;">
-                            <div style="font-size: 1.5rem;">🖥️</div>
-                            <div>Desktop</div>
-                        </div>
-                        <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px;">
-                            <div style="font-size: 1.5rem;">🌙</div>
-                            <div>Mode sombre</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="settings-card">
-                    <h3>Configuration Firebase Storage</h3>
-                    <div style="background: #fff5f5; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #e53e3e;">
-                        <h4 style="color: #e53e3e; margin-bottom: 0.5rem;">🚫 Erreur 403 - Accès refusé</h4>
-                        <p style="margin: 0;"><strong>Problème :</strong> Les règles Firebase Storage bloquent l'upload des images.</p>
-                    </div>
-                    <div style="background: #f0fff4; padding: 1rem; border-radius: 8px; border-left: 4px solid #38a169;">
-                        <h4 style="color: #276749; margin-bottom: 0.5rem;">✅ Solution rapide (2 minutes)</h4>
-                        <ol style="margin: 0; padding-left: 1.5rem; line-height: 1.8;">
-                            <li>Ouvrez <a href="https://console.firebase.google.com" target="_blank" style="color: #3182ce; text-decoration: underline;">Firebase Console</a></li>
-                            <li>Sélectionnez votre projet <strong>"dynamicfr"</strong></li>
-                            <li>Allez dans <strong>Storage → Rules</strong></li>
-                            <li>Remplacez tout le contenu par :
-                                <pre style="background: #1a202c; color: #e2e8f0; padding: 0.8rem; border-radius: 6px; margin: 0.8rem 0; font-size: 0.85rem; overflow-x: auto;">rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if true;
-    }
-  }
-}</pre>
-                            </li>
-                            <li>Cliquez sur <strong>"Publish"</strong> (Publier)</li>
-                            <li>Attendez 30 secondes puis testez ci-dessous</li>
-                        </ol>
-                    </div>
-                    
-                    <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
-                        <button class="btn btn-info" onclick="testFirebaseStorage().then(result => showNotification(result ? '🎉 Firebase Storage fonctionne parfaitement !' : '❌ Règles pas encore appliquées - Réessayez dans 30 secondes', result ? 'success' : 'error'))">
-                            🔍 Tester Firebase Storage
-                        </button>
-                        <button class="btn btn-secondary" onclick="window.open('https://console.firebase.google.com/project/dynamicfr/storage/rules', '_blank')">
-                            🔧 Ouvrir Firebase Console
-                        </button>
-                    </div>
-                    
-                    <div style="background: #edf2f7; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
-                        <p style="margin: 0; font-size: 0.9rem; color: #4a5568;">
-                            💡 <strong>Note :</strong> En attendant, l'application fonctionne en mode local. 
-                            Vos images seront temporairement stockées dans le navigateur.
-                        </p>
                     </div>
                 </div>
             </div>
@@ -639,6 +608,22 @@ service firebase.storage {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-storage-compat.min.js"></script>
     
-    <script src="script.js"></script>
+    <!-- Scripts modulaires optimisés -->
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="navigation.js"></script>
+    <script src="mobile.js"></script>
+    <script src="data-loader.js"></script>
+    <script src="client-manager.js"></script>
+    <script src="article-manager.js"></script>
+    <script src="document-manager.js"></script>
+    <script src="sales-manager.js"></script>
+    <script src="purchase-manager.js"></script>
+    <script src="payment-manager.js"></script>
+    <script src="document-preview.js"></script>
+    <script src="settings-manager.js"></script>
+    <script src="filters.js"></script>
+    <script src="event-handlers.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>

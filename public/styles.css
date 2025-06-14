@@ -58,49 +58,6 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 var(--spacing-lg);
-}
-
-.nav-logo {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    flex-shrink: 0;
-}
-
-.nav-logo h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-/* Navigation horizontale scrollable */
-.nav-menu {
-    display: flex;
-    gap: var(--spacing-xs);
-    overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
-    padding: var(--spacing-xs) 0;
-    flex: 1;
-    justify-content: flex-end;
-}
-
-.nav-menu::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
-}
-
-.nav-btn {
-    background: transparent;
-    border: 2px solid transparent;
-    color: white;
-   
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
     gap: var(--spacing-xs);
     white-space: nowrap;
     flex-shrink: 0;
@@ -134,14 +91,23 @@ body {
     min-height: calc(100vh - 80px);
 }
 
-/* Sections avec animations améliorées */
+/* Sections avec animations améliorées - VERSION CORRIGÉE */
 .section {
-    display: none;
-    animation: fadeInUp 0.4s ease-out;
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transform: translateY(20px);
+    transition: all 0.3s ease-out;
+    position: relative;
+    z-index: 1;
 }
 
 .section.active {
-    display: block;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    animation: fadeInUp 0.4s ease-out;
 }
 
 @keyframes fadeInUp {
@@ -744,54 +710,42 @@ textarea {
     }
 }
 
-/* Sections d'aide et configuration */
-.help-section {
-    background: #fff5f5;
-    padding: var(--spacing-sm);
+/* Filtres */
+.filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background-color: #f8f9fa;
     border-radius: var(--border-radius-sm);
-    margin-bottom: var(--spacing-sm);
-    border-left: 4px solid #e53e3e;
+    align-items: center;
 }
 
-.solution-section {
-    background: #f0fff4;
-    padding: var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    border-left: 4px solid #38a169;
-}
-
-.info-section {
-    background: #edf2f7;
-    padding: var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    margin-top: var(--spacing-sm);
-}
-
-.solution-section h4 {
-    color: #276749;
-    margin-bottom: var(--spacing-xs);
-}
-
-.help-section h4 {
-    color: #e53e3e;
-    margin-bottom: var(--spacing-xs);
-}
-
-.info-section p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #4a5568;
-}
-
-pre {
-    background: #1a202c;
-    color: #e2e8f0;
-    padding: 0.8rem;
+.filter-input {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid #ddd;
     border-radius: 6px;
-    margin: 0.8rem 0;
-    font-size: 0.85rem;
-    overflow-x: auto;
-    border: 1px solid #2d3748;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.filter-date {
+    flex: 0.5;
+    min-width: 150px;
+}
+
+.filter-container .btn {
+    flex: 0;
+    white-space: nowrap;
 }
 
 /* États de chargement */
@@ -819,8 +773,6 @@ pre {
 .mobile-optimized * {
     -webkit-tap-highlight-color: transparent;
 }
-
-
 
 /* Media queries pour responsive design */
 @media (max-width: 1024px) {
@@ -949,6 +901,19 @@ pre {
         justify-content: center;
     }
     
+    .filter-container {
+        flex-direction: column;
+    }
+    
+    .filter-input, .filter-date {
+        width: 100%;
+        min-width: unset;
+    }
+    
+    .filter-container .btn {
+        width: 100%;
+    }
+    
     /* Tables responsive sur mobile */
     table {
         min-width: 500px;
@@ -1026,7 +991,7 @@ pre {
     }
 }
 
-/* Support pour le mode sombre (selon les préférences système) */
+/* Support pour le mode sombre */
 @media (prefers-color-scheme: dark) {
     :root {
         --text-primary: #e2e8f0;
@@ -1063,39 +1028,6 @@ pre {
     }
 }
 
-/* Animations et transitions fluides */
-@media (prefers-reduced-motion: no-preference) {
-    .fade-in {
-        animation: fadeIn 0.5s ease-in-out;
-    }
-    
-    .slide-up {
-        animation: slideUp 0.3s ease-out;
-    }
-    
-    @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-}
-
-/* Respect des préférences de mouvement réduit */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
 /* Print styles */
 @media print {
     .navbar,
@@ -1126,5 +1058,170 @@ pre {
     
     table {
         min-width: auto;
+    }
+} 
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+}
+
+.nav-logo h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Navigation horizontale scrollable */
+.nav-menu {
+    display: flex;
+    gap: var(--spacing-xs);
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    padding: var(--spacing-xs) 0;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.nav-menu::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.nav-btn {
+    background: transparent;
+    border: 2px solid transparent;
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    display: flex;
+}
+
+
+
+/* styles.css */
+
+/* Styles pour les sections */
+.section {
+    display: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.section.active {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Styles par défaut pour la navbar */
+.nav-menu {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: #f7fafc;
+    padding: 10px;
+}
+
+.nav-btn {
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.3s;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: #2d3748;
+}
+
+.nav-btn.active {
+    background: #3490dc;
+    color: white;
+    border-radius: 4px;
+}
+
+/* Bouton hamburger (caché par défaut) */
+.hamburger {
+    display: none;
+    font-size: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    color: #2d3748;
+}
+
+/* Menu mobile (caché par défaut) */
+.nav-mobile {
+    display: none;
+    flex-direction: column;
+    background: #f7fafc;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.nav-mobile .nav-btn {
+    width: 100%;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 15px 20px;
+}
+
+/* Modal styles (pour compatibilité avec document-preview.js) */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 20px;
+    width: 90%;
+    max-width: 800px;
+    border-radius: 8px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* Media query pour petites dimensions (mobile) */
+@media (max-width: 768px) {
+    .nav-menu {
+        display: none;
+    }
+    .hamburger {
+        display: block;
+    }
+    .nav-mobile.active {
+        display: flex;
+    }
+}
+
+/* Assurer que la navbar n'interfère pas avec l'impression */
+@media print {
+    .nav-menu, .hamburger, .nav-mobile {
+        display: none !important;
     }
 }
